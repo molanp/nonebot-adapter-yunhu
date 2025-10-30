@@ -1,0 +1,45 @@
+name: Upload Python Package
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Poetry installation
+        run: poetry --version
+
+      - name: Configure Poetry for CI
+        run: poetry config virtualenvs.create false
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Build package using Poetry
+        run: poetry build
+
+      - name: Publish package to PyPI
+        run: poetry publish
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}

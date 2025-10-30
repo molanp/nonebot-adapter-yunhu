@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "nonebot-adapter-yunhu"
+version = "0.1.0"
+description = "A NoneBot adapter for YunHu"
+authors = ["molanp <molanpp@outlook.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "nonebot", from = "src" }
+]
+
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Framework :: Robot Framework",
+  "Framework :: Robot Framework :: Library",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+]
+
+keywords = ["yunhu", "adapter", "nonebot2"]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+nonebot2 = ">=2.2.0"
+typing-extensions = ">=4.0.0"
+pydantic = ">=1.10.0,<3.0.0,!=2.5.0,!=2.5.1"
+aiofiles = ">=23.0.0"
+filetype = ">=1.0.0"
+
+[tool.poetry.urls]
+Homepage = "https://github.com/molanp/nonebot-adapter-yunhu"
+Repository = "https://github.com/molanp/nonebot-adapter-yunhu"
+
+
+[[tool.poetry.source]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
