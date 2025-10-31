@@ -10,6 +10,10 @@ YunHu adapter for NoneBot2
 
 </div>
 
+> [!IMPORTANT]
+>
+> 没写完，不能用
+
 ## 事件支持情况
 
 - [ ] 按钮事件接收
