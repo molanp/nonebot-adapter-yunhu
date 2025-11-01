@@ -24,18 +24,10 @@ python = ">=3.9,<4.0"
 nonebot2 = ">=2.2.0"
 typing-extensions = ">=4.0.0"
 pydantic = ">=1.10.0,<3.0.0,!=2.5.0,!=2.5.1"
-aiofiles = ">=23.0.0"
-filetype = ">=1.0.0"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/molanp/nonebot-adapter-yunhu"
 Repository = "https://github.com/molanp/nonebot-adapter-yunhu"
-
-
-[[tool.poetry.source]]
-name = "aliyun"
-url = "https://mirrors.aliyun.com/pypi/simple/"
-priority = "primary"
 
 [build-system]
 requires = ["poetry-core"]
