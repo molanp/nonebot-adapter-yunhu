@@ -1,15 +1,17 @@
-# NoneBot YunHu Adapter
+<p align="center">
+  <a href="https://nonebot.dev/"><img src="https://nonebot.dev/logo.png" width="200" height="200" alt="nonebot"></a>
+</p>
 
 <div align="center">
+# NoneBot-Adapter-YunHu
 
-YunHu adapter for NoneBot2
+_✨ YunHu adapter for NoneBot2 ✨_
 
 [![PyPI](https://img.shields.io/pypi/v/nonebot-adapter-yunhu)](https://pypi.org/project/nonebot-adapter-yunhu/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/nonebot-adapter-yunhu)](https://pypi.org/project/nonebot-adapter-yunhu/)
 ![GitHub](https://img.shields.io/github/license/molanp/nonebot-adapter-yunhu)
 
 </div>
-
 
 ## 事件支持情况
 
@@ -115,7 +117,6 @@ async def handle_send_image(bot: Bot, event: MessageEvent):
 ## 许可证
 
 MIT License
-
 
 ## 相关链接
 
