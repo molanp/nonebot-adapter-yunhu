@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import re
 from typing import TYPE_CHECKING, Literal, Optional, TypedDict, Union
-from typing_extensions import override
+from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
@@ -53,16 +53,20 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return At("at", {"user_id": user_id, "name": name})
 
     @staticmethod
-    def image(imageKey: str) -> "Image":
-        return Image("image", {"imageKey": imageKey})
+    def image(imageKey: Optional[str] = None, raw: Optional[bytes] = None) -> "Image":
+        return Image("image", {"imageKey": imageKey, "_raw": raw})
 
     @staticmethod
-    def video(fileKey: str) -> "MessageSegment":
-        return Video("video", {"videoKey": fileKey})
+    def video(
+        fileKey: Optional[str] = None, raw: Optional[bytes] = None
+    ) -> "MessageSegment":
+        return Video("video", {"videoKey": fileKey, "_raw": raw})
 
     @staticmethod
-    def file(fileKey: str) -> "MessageSegment":
-        return File("file", {"fileKey": fileKey})
+    def file(
+        fileKey: Optional[str] = None, raw: Optional[bytes] = None
+    ) -> "MessageSegment":
+        return File("file", {"fileKey": fileKey, "_raw": raw})
 
     @staticmethod
     def markdown(text: str) -> "MessageSegment":
@@ -123,7 +127,8 @@ class At(MessageSegment):
 
 
 class _ImageData(TypedDict):
-    imageKey: str
+    imageKey: Optional[str]
+    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -133,11 +138,12 @@ class Image(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[image:{self.data['imageKey']!r}]"
+        return f"[image:{self.data['imageKey']}]"
 
 
 class _VideoData(TypedDict):
-    videoKey: str
+    videoKey: Optional[str]
+    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -147,11 +153,12 @@ class Video(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[video:{self.data!r}]"
+        return f"[video:{self.data['videoKey']}]"
 
 
 class _FileData(TypedDict):
-    fileKey: str
+    fileKey: Optional[str]
+    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -161,7 +168,7 @@ class File(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[file:{self.data!r}]"
+        return f"[file:{self.data['fileKey']}]"
 
 
 class Message(BaseMessage[MessageSegment]):

@@ -22,7 +22,7 @@ from .event import (
     MessageEvent,
     PrivateMessageEvent,
 )
-from .message import At, Message, MessageSegment
+from .message import At, File, Image, Message, MessageSegment, Video
 
 if TYPE_CHECKING:
     from .adapter import Adapter
@@ -175,6 +175,90 @@ async def send(
     )
 
 
+async def upload_resource_data(
+    bot: "Bot",
+    message: Message,
+) -> Message:
+    """
+    遍历消息段，查找image、video、file类型并上传raw数据
+
+    Args:
+        message: 要处理的消息对象
+
+    Returns:
+        处理后的消息对象，其中缺失key的资源段已被设置key
+
+    Raises:
+        ValueError: 当资源段既没有key也没有raw数据时抛出异常
+    """
+    processed_message = Message()
+
+    for segment in message:
+        raw = segment.data.get("_raw")
+        if isinstance(segment, Image):
+            # 处理图片类型
+            if not segment.data.get("imageKey") and raw:
+                # 如果没有imageKey但有raw数据，则上传
+                image_key = await bot.post_image(raw)
+                processed_segment = Image(
+                    "image",
+                    {
+                        "imageKey": image_key,
+                    },
+                )
+                processed_message.append(processed_segment)
+            elif not segment.data.get("imageKey") and not raw:
+                # 既没有key也没有raw数据，报错
+                raise ValueError("Image segment missing both imageKey and raw data")
+            else:
+                # 已有imageKey，直接添加
+                processed_message.append(segment)
+
+        elif isinstance(segment, Video):
+            # 处理视频类型
+            if not segment.data.get("videoKey") and raw:
+                # 如果没有videoKey但有raw数据，则上传
+                video_key = await bot.post_video(raw)
+                processed_segment = Video(
+                    "video",
+                    {
+                        "videoKey": video_key,
+                    },
+                )
+                processed_message.append(processed_segment)
+            elif not segment.data.get("videoKey") and not raw:
+                # 既没有key也没有raw数据，报错
+                raise ValueError("Video segment missing both videoKey and raw data")
+            else:
+                # 已有videoKey，直接添加
+                processed_message.append(segment)
+
+        elif isinstance(segment, File):
+            # 处理文件类型
+            if not segment.data.get("fileKey") and raw:
+                # 如果没有fileKey但有raw数据，则上传
+                file_key = await bot.post_file(raw)
+                processed_segment = File(
+                    "file",
+                    {
+                        "fileKey": file_key,
+                    },
+                )
+                processed_message.append(processed_segment)
+            elif not segment.data.get("fileKey") and not raw:
+                # 既没有key也没有raw数据，报错
+                raise ValueError("File segment missing both fileKey and raw data")
+            else:
+                # 已有fileKey，直接添加
+                processed_message.append(segment)
+
+        else:
+            # 其他类型消息段直接添加
+            processed_message.append(segment)
+
+    return processed_message
+
+
 class Bot(BaseBot):
     send_handler: Callable[["Bot", Event, Union[str, Message, MessageSegment]], Any] = (
         send
@@ -321,7 +405,7 @@ class Bot(BaseBot):
         self,
         file: Union[str, bytes, BytesIO, Path],
     ):
-        if not isinstance(file, bytes) and not isinstance(file, BytesIO):
+        if not isinstance(file, (bytes, BytesIO)):
             file = open(file, "rb").read()
 
         files = [("file", file)]
@@ -343,7 +427,7 @@ class Bot(BaseBot):
         self,
         video: Union[str, bytes, BytesIO, Path],
     ):
-        if not isinstance(video, bytes) and not isinstance(video, BytesIO):
+        if not isinstance(video, (bytes, BytesIO)):
             video = open(video, "rb").read()
 
         videos = [("video", video)]
@@ -365,7 +449,7 @@ class Bot(BaseBot):
         self,
         image: Union[str, bytes, BytesIO, Path],
     ):
-        if not isinstance(image, bytes) and not isinstance(image, BytesIO):
+        if not isinstance(image, (bytes, BytesIO)):
             image = open(image, "rb").read()
 
         images = [("image", image)]
