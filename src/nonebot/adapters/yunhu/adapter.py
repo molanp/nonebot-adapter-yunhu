@@ -126,6 +126,7 @@ class Adapter(BaseAdapter):
         )
         return type_validate_python(BotInfo, response)
 
+
     async def send_request(self, request: Request, **data: Any):
         return_response = data.get("_return_response", False)
         timeout: float = data.get("_timeout", self.config.api_timeout)

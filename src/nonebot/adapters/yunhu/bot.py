@@ -9,8 +9,10 @@ from nonebot.adapters import Bot as BaseBot
 from nonebot.log import logger
 from nonebot.compat import type_validate_python
 from nonebot.message import handle_event
+from nonebot.drivers import Request
 
-from .models import Reply
+
+from .models import Reply, SendMsgResponse, GroupInfo, UserInfo, BoardResponse
 
 from .exception import ActionFailed
 
@@ -37,14 +39,10 @@ async def _check_reply(bot: "Bot", event: "Event"):
 
     if event.event.message.parentId != event.event.message.msgId:
         try:
-            response = await bot.get_msg(
+            result = await bot.get_msg(
                 event.event.message.parentId,
                 event.event.message.chatId,
                 event.event.message.chatType,
-            )
-            result = type_validate_python(
-                Reply,
-                response,
             )
             if result.senderId == bot.bot_config.app_id:
                 event.to_me = True
@@ -267,6 +265,7 @@ class Bot(BaseBot):
     """Bot 配置"""
     nickname: str
     """Bot 昵称"""
+    yunhu_adapter: "Adapter"
 
     @override
     def __init__(
@@ -280,6 +279,7 @@ class Bot(BaseBot):
         super().__init__(adapter, self_id)
         self.bot_config = bot_config
         self.nickname = nickname
+        self.yunhu_adapter = adapter
 
     async def get_msgs(
         self, chat_id: str, chat_type: Literal["user", "hroup"], **params: Any
@@ -307,7 +307,7 @@ class Bot(BaseBot):
 
     async def get_msg(
         self, message_id: str, chat_id: str, chat_type: Literal["group", "user", "bot"]
-    ):
+    ) -> Reply:
         if chat_type == "bot":
             chat_type = "user"
         response = await self.call_api(
@@ -330,7 +330,7 @@ class Bot(BaseBot):
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
             )
-        return response["data"]["list"][0]
+        return type_validate_python(Reply, response["data"]["list"][0])
 
     async def delete_msg(
         self, message_id: str, chat_id: str, chat_type: Literal["user", "group"]
@@ -378,6 +378,164 @@ class Bot(BaseBot):
             json=json,
         )
 
+    async def get_group_info(self, group_id: str):
+        """获取群信息"""
+
+        response = await self.yunhu_adapter.send_request(
+            Request(
+                "POST",
+                "https://chat-web-go.jwzhd.com/v1/group/group-info",
+                json={"groupId": group_id},
+            ),
+        )
+        return type_validate_python(GroupInfo, response)
+
+    async def get_user_info(self, user_id: str):
+        """获取用户信息"""
+
+        response = await self.yunhu_adapter.send_request(
+            Request(
+                "POST",
+                "https://chat-web-go.jwzhd.com/v1/user/homepage",
+                json={"userId": user_id},
+            ),
+        )
+        return type_validate_python(UserInfo, response)
+
+    async def set_group_board(
+        self,
+        content: str,
+        content_type: Literal["text", "markdown", "html"],
+        group_id: str,
+        memberId: Optional[str] = None,
+        expire_time: int = 0,
+    ):
+        """
+        设置群看板
+
+        :param content: 看板内容
+        :param content_type: 看板内容类型
+        :param group_id: 群ID
+        :param memberId: 成员ID(可为指定成员设置，留空则全局设置)
+        :param expire_time: 看板过期时间戳(0为不过期)
+        """
+        response = await self.call_api(
+            "bot/board",
+            method="POST",
+            json={
+                "chatType": "group",
+                "content": content,
+                "contentType": content_type,
+                "chatId": group_id,
+                "memberId": memberId,
+                "expireTime": expire_time,
+            },
+        )
+        return type_validate_python(BoardResponse, response)
+
+    async def dismiss_group_board(
+        self,
+        group_id: str,
+        memberId: Optional[str] = None,
+    ):
+        """
+        移除群看板
+
+        :param group_id: 群ID
+        :param memberId: 成员ID(可为指定成员取消，留空则全部取消)
+        """
+        response = await self.call_api(
+            "bot/board-dismiss",
+            method="POST",
+            json={
+                "chatType": "group",
+                "chatId": group_id,
+                "memberId": memberId,
+            },
+        )
+        return type_validate_python(BoardResponse, response)
+
+    async def set_user_board(
+        self,
+        content: str,
+        content_type: Literal["text", "markdown", "html"],
+        user_id: str,
+        expire_time: int = 0,
+    ):
+        """
+        设置用户看板
+
+        :param content: 看板内容
+        :param content_type: 看板内容类型
+        :param user_id: 用户ID
+        :param expire_time: 看板过期时间戳(0为不过期)
+        """
+        response = await self.call_api(
+            "bot/board",
+            method="POST",
+            json={
+                "chatType": "user",
+                "content": content,
+                "contentType": content_type,
+                "chatId": user_id,
+                "expireTime": expire_time,
+            },
+        )
+        return type_validate_python(BoardResponse, response)
+
+    async def dismiss_user_board(
+        self,
+        user_id: str,
+    ):
+        """
+        移除用户看板
+
+        :param user_id: 用户ID
+        """
+        response = await self.call_api(
+            "bot/board-dismiss",
+            method="POST",
+            json={
+                "chatType": "user",
+                "chatId": user_id,
+            },
+        )
+        return type_validate_python(BoardResponse, response)
+
+    async def set_all_board(
+        self,
+        content: str,
+        content_type: Literal["text", "markdown", "html"],
+        expire_time: int = 0,
+    ):
+        """
+        设置全局看板
+
+        :param content: 看板内容
+        :param content_type: 看板内容类型
+        :param expire_time: 看板过期时间戳(0为不过期)
+        """
+        response = await self.call_api(
+            "bot/board-all",
+            method="POST",
+            json={
+                "content": content,
+                "contentType": content_type,
+                "expireTime": expire_time,
+            },
+        )
+        return type_validate_python(BoardResponse, response)
+
+    async def dismiss_all_board(self):
+        """
+        移除全局看板
+        """
+        response = await self.call_api(
+            "bot/board-all-dismiss",
+            method="POST",
+        )
+        return type_validate_python(BoardResponse, response)
+
     async def send_msg(
         self,
         receive_type: Literal["group", "user"],
@@ -386,7 +544,7 @@ class Bot(BaseBot):
         content_type: str,
         parent_id: Optional[str] = None,
     ):
-        return await self.call_api(
+        result = await self.call_api(
             "bot/send",
             method="POST",
             json={
@@ -397,9 +555,7 @@ class Bot(BaseBot):
                 "parentId": parent_id,
             },
         )
-
-    async def get_file_url(self, file_key: str):
-        return f"https://chat-file.jwznb.com/{file_key}"
+        return type_validate_python(SendMsgResponse, result)
 
     async def post_file(
         self,
@@ -426,7 +582,7 @@ class Bot(BaseBot):
     async def post_video(
         self,
         video: Union[str, bytes, BytesIO, Path],
-    ):
+    ) -> str:
         if not isinstance(video, (bytes, BytesIO)):
             video = open(video, "rb").read()
 
@@ -448,7 +604,7 @@ class Bot(BaseBot):
     async def post_image(
         self,
         image: Union[str, bytes, BytesIO, Path],
-    ):
+    ) -> str:
         if not isinstance(image, (bytes, BytesIO)):
             image = open(image, "rb").read()
 

@@ -1,4 +1,5 @@
-from typing import Literal
+from enum import Enum
+from typing import Literal, Optional
 from pydantic import BaseModel
 
 
@@ -18,36 +19,19 @@ class DataDetail(BaseModel):
 class SendMsgResponse(BaseModel):
     code: int
     """状态码， 1 表示成功"""
-    data: DataDetail | None
+    data: Optional[DataDetail] = None
     """响应数据"""
     msg: str
     """返回信息"""
 
 
-class UpImgResponse(BaseModel):
-    imageKey: str
-    """图片的标签"""
-
-
-class UpVideoResponse(BaseModel):
-    videoKey: str
-    """视频的标签"""
-
-
-class UpFileResponse(BaseModel):
-    fileKey: str
-    """文件的标签"""
-
-
-class UploadResponse(BaseModel):
-    code: int
-    """返回码"""
-
-    data: UpImgResponse | UpVideoResponse | UpFileResponse | None
-    """返回数据"""
-
-    msg: str
-    """返回信息"""
+class chatType(Enum):
+    USER = 1
+    """用户"""
+    GROUP = 2
+    """群组"""
+    BOT = 3
+    """机器人"""
 
 
 class CheckChatInfoRecord(BaseModel):
@@ -59,30 +43,22 @@ class CheckChatInfoRecord(BaseModel):
 
     id: int
     """某种神秘的ID"""
-
     chatId: str
-    """对象ID (与botId相同)"""
-
-    chatType: int
-    """对象类型 (3表示机器人)"""
-
+    """对象ID"""
+    chatType: chatType
+    """对象类型"""
     checkWay: str
-    """检查方式 (通常为空)"""
-
+    """未知"""
     reason: str
-    """原因 (通常为空)"""
-
+    """未知"""
     status: int
-    """状态 (0表示正常)"""
-
+    """未知"""
     createTime: int
     """创建时间戳"""
-
     updateTime: int
-    """更新时间戳 (0表示未更新)"""
-
+    """最近更新时间戳"""
     delFlag: int
-    """删除标志 (0表示未删除)"""
+    """是否被删除"""
 
 
 class Bot(BaseModel):
@@ -94,46 +70,32 @@ class Bot(BaseModel):
 
     id: int
     """机器人在数据库中的序列"""
-
     botId: str
     """机器人唯一标识"""
-
     nickname: str
     """机器人昵称"""
-
     nicknameId: int
     """昵称ID"""
-
     avatarId: int
     """头像ID"""
-
     avatarUrl: str
     """头像URL地址"""
-
     token: str
     """访问令牌 (通常为空)"""
-
     link: str
     """机器人订阅接口URL (通常为空)"""
-
     introduction: str
     """机器人简介"""
-
     createBy: str
-    """创建者标识"""
-
+    """创建者ID"""
     createTime: int
     """创建时间戳"""
-
     headcount: int
     """使用人数"""
-
     private: int
     """是否私有 (0:公开, 1:私有)"""
-
     uri: str
     """API发送消息地址"""
-
     checkChatInfoRecord: CheckChatInfoRecord
     """聊天信息检查记录"""
 
@@ -158,9 +120,156 @@ class BotInfo(BaseModel):
 
     code: int
     """响应状态码 (1表示成功)"""
-
-    data: BotInfoData | None
+    data: Optional[BotInfoData] = None
     """响应数据内容"""
-
     msg: str
-    """响应消息描述 (success表示成功)"""
+    """响应消息描述"""
+
+
+class Group(BaseModel):
+
+    id: int
+    """群聊在数据库中的序列"""
+    groupId: str
+    """群聊ID"""
+    name: str
+    """群聊名称"""
+    introduction: str
+    """群聊简介"""
+    createBy: str
+    """创建者ID"""
+    createTime: int
+    """创建时间戳"""
+    avatarId: int
+    """群聊头像ID"""
+    avatarUrl: str
+    """群聊头像URL"""
+    headcount: int
+    """群人数"""
+    readHistory: int
+    """是否允许新成员获取以前的历史消息"""
+    category: str
+    """群聊分类"""
+    uri: str
+    """不知道"""
+    checkChatInfoRecord: CheckChatInfoRecord
+    """群聊检查记录"""
+
+
+class GroupInfoData(BaseModel):
+    """
+    响应数据模型
+
+    包装群组信息的容器
+    """
+
+    group: Group
+    """群组信息对象"""
+
+
+class GroupInfo(BaseModel):
+    """
+    群组信息模型
+
+    包含群组的基本信息
+    """
+
+    code: int
+    """响应状态码 (1表示成功)"""
+    data: Optional[GroupInfoData] = None
+    """响应数据内容"""
+    msg: str
+    """响应消息描述"""
+
+
+class UserMedal(BaseModel):
+    """
+    用户勋章模型
+
+    包含用户勋章信息
+    """
+
+    id: int
+    """勋章ID"""
+    name: str
+    """勋章名称"""
+    desc: str
+    """勋章描述"""
+    imageUrl: str
+    """勋章图像URL?"""
+    sort: int
+    """排序"""
+
+
+class User(BaseModel):
+
+    userId: str
+    """用户ID"""
+    nickname: str
+    """用户名"""
+    avatarUrl: str
+    """用户头像URL"""
+    registerTime: int
+    """注册时间戳"""
+    registerTimeText: str
+    """注册时间文本"""
+    onLineDay: int
+    """在线天数"""
+    continuousOnLineDay: int
+    """连续在线天数"""
+    medals: list[UserMedal]
+    """用户勋章信息"""
+    isVip: int
+    """是否为VIP (0:否, 1:是)"""
+
+
+class UserInfoData(BaseModel):
+    """
+    响应数据模型
+
+    包装用户信息的容器
+    """
+
+    user: User
+    """用户信息对象"""
+
+
+class UserInfo(BaseModel):
+    """
+    用户信息模型
+
+    包含用户基本信息
+    """
+
+    code: int
+    """响应状态码 (1表示成功)"""
+    data: Optional[UserInfoData] = None
+    """响应数据内容"""
+    msg: str
+    """响应消息描述"""
+
+
+class BoardData(BaseModel):
+    """
+    设置看板数据结果模型
+
+    包含设置看板结果信息
+    """
+
+    successCount: int
+    """成功设置的看板数量"""
+
+
+class BoardResponse(BaseModel):
+    """
+    设置看板响应模型
+
+    API返回的设置看板结果
+    """
+
+    code: int
+    """响应状态码 (1表示成功)"""
+    data: Optional[BoardData] = None
+    """响应数据内容"""
+    msg: str
+    """响应消息描述"""
