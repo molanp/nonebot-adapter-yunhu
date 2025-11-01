@@ -8,7 +8,6 @@ from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
 
 from .models.common import Content, TextContent
-from nonebot.compat import model_dump
 
 
 class MessageSegment(BaseMessageSegment["Message"]):
@@ -27,7 +26,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @override
     def __str__(self) -> str:
-        return self.data.get("text", "") if self.is_text() else ""
+        return str(self.data)
 
     @override
     def __add__(  # type: ignore
@@ -50,20 +49,20 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Text("text", {"text": text})
 
     @staticmethod
-    def at(user_id: str):
-        return At("at", {"user_id": user_id})
+    def at(user_id: str, name: Optional[str] = None):
+        return At("at", {"user_id": user_id, "name": name})
 
     @staticmethod
-    def image(image_key: str) -> "Image":
-        return Image("image", {"image_key": image_key})
+    def image(imageKey: str) -> "Image":
+        return Image("image", {"imageKey": imageKey})
 
     @staticmethod
-    def video(file_key: str, duration: Optional[int] = None) -> "MessageSegment":
-        return Video("video", {"video_key": file_key, "duration": duration})
+    def video(fileKey: str) -> "MessageSegment":
+        return Video("video", {"videoKey": fileKey})
 
     @staticmethod
-    def file(file_key: str, file_name: Optional[str] = None) -> "MessageSegment":
-        return File("file", {"file_key": file_key, "file_name": file_name})
+    def file(fileKey: str) -> "MessageSegment":
+        return File("file", {"fileKey": fileKey})
 
     @staticmethod
     def markdown(text: str) -> "MessageSegment":
@@ -110,6 +109,7 @@ class Html(MessageSegment):
 
 class _AtData(TypedDict):
     user_id: str
+    name: Optional[str]
 
 
 @dataclass
@@ -119,11 +119,11 @@ class At(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"@{self.data['user_id']}"
+        return f"[at:user_id={self.data['user_id']},name={self.data['name']}]"
 
 
 class _ImageData(TypedDict):
-    image_key: str
+    imageKey: str
 
 
 @dataclass
@@ -133,12 +133,11 @@ class Image(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[image:{self.data['image_key']!r}]"
+        return f"[image:{self.data['imageKey']!r}]"
 
 
 class _VideoData(TypedDict):
-    video_key: str
-    duration: Optional[int]
+    videoKey: str
 
 
 @dataclass
@@ -152,8 +151,7 @@ class Video(MessageSegment):
 
 
 class _FileData(TypedDict):
-    file_key: str
-    file_name: Optional[str]
+    fileKey: str
 
 
 @dataclass
@@ -226,9 +224,9 @@ class Message(BaseMessage[MessageSegment]):
         ],
         command_name: Optional[str] = None,
     ) -> "Message":
-        command_name = f"{command_name} " if command_name else ""
+        command_name = f"{command_name} " if command_name else None
         msg = Message(command_name)
-        parsed_content = model_dump(content)
+        parsed_content = content.to_dict()
 
         if message_type == "text":
             assert isinstance(content, TextContent)
@@ -240,9 +238,9 @@ class Message(BaseMessage[MessageSegment]):
             # at_list的索引
             at_index = 0
 
-            # 修改正则表达式以匹配格式: @用户名 \u200b (后面可能还有内容)
+            # 匹配格式: @用户名 \u200b
             for embed in re.finditer(
-                r"@(?P<name>[^ \u200b]+)\s*\u200b",
+                r"@(?P<name>[^@\u200b\s]+)\s*\u200b",
                 text,
             ):
                 if matched := text[text_begin : embed.start()]:
@@ -265,15 +263,16 @@ class Message(BaseMessage[MessageSegment]):
                             actual_user_id  # 记录这个用户名对应的at_list中的ID
                         )
                         at_index += 1
-
-                msg.extend(
-                    Message(
-                        At(
-                            "at",
-                            {"user_id": actual_user_id},
+                if actual_user_id:
+                    """忽略假at"""
+                    msg.extend(
+                        Message(
+                            At(
+                                "at",
+                                {"user_id": actual_user_id, "name": user_name},
+                            )
                         )
                     )
-                )
 
             if matched := text[text_begin:]:
                 msg.append(Text("text", {"text": text[text_begin:]}))

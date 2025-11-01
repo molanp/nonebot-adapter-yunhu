@@ -98,7 +98,7 @@ class MessageEvent(Event):
     @override
     def get_event_description(self) -> str:
         return (
-            f"{self.event.message.msgId} from {self.get_user_id()}"
+            f"Message {self.event.message.msgId} from {self.get_user_id()}"
             f"@[{self.event.message.chatType}:{self.event.message.chatId}]"
             f" {escape_tag(str(self.get_message()))}"
         )
@@ -156,10 +156,13 @@ class GroupMessageEvent(MessageEvent):
 
 class PrivateMessageEvent(MessageEvent):
     __event__ = "message.receive.normal.bot"
+    to_me: bool = True
 
 
 class InstructionMessageEvent(MessageEvent):
+    """机器人收不到用户对其他机器人的命令消息，不用担心误触发"""
     __event__ = "message.receive.instruction"
+    to_me: bool = True
 
 
 class NoticeEvent(Event):

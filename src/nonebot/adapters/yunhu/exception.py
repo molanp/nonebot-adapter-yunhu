@@ -8,7 +8,7 @@ from nonebot.exception import NetworkError as BaseNetworkError
 
 class YunHuAdapterException(AdapterException):
     def __init__(self):
-        super().__init__("feishu")
+        super().__init__("yunhu")
 
 
 class ActionFailed(BaseActionFailed, YunHuAdapterException):

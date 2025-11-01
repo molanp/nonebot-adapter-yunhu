@@ -16,6 +16,7 @@ YunHu adapter for NoneBot2
 
 ## 事件支持情况
 
+- [ ] 基础消息事件
 - [ ] 按钮事件接收
 - [ ] 机器人设置消息事件
 - [ ] 按钮发送
@@ -118,7 +119,6 @@ async def handle_send_image(bot: Bot, event: MessageEvent):
 
 MIT License
 
-Copyright (c) 2022 molanp
 
 ## 相关链接
 

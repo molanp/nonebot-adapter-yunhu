@@ -25,7 +25,12 @@ from . import event
 from .bot import Bot
 from .config import Config, YunHuConfig
 from .event import Event
-from .exception import ApiNotAvailable, YunHuAdapterException, NetworkError
+from .exception import (
+    ApiNotAvailable,
+    YunHuAdapterException,
+    NetworkError,
+    ActionFailed,
+)
 from nonebot.log import logger
 from .models import BotInfo
 
@@ -160,16 +165,23 @@ class Adapter(BaseAdapter):
     async def _call_api(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, bot: Bot, api: str, **data: Any
     ) -> Any:
+        logger.debug(f"Calling API: {api}, data: {data}")
+        params = {"token": bot.bot_config.token}
+        if p := data.get("params"):
+            params |= p
         request = Request(
             data["method"],
             self.get_api_url(api),
             files=data.get("files"),
             json=data.get("json"),
             data=data.get("data"),
-            params={"token": bot.bot_config.token}.update(data.get("params", {})),
+            params=params,
         )
 
-        return await self.send_request(request, **data)
+        result = await self.send_request(request)
+        if isinstance(result, dict) and result.get("code") != 1:
+            raise ActionFailed(message=result.get("msg"))
+        return result
 
     async def _handle_http(self, request: Request) -> Response:
         bot_config = self.bot_apps.get(request.url.parts[-1])
@@ -179,7 +191,7 @@ class Adapter(BaseAdapter):
         if (data := request.content) is not None:
             data = json.loads(data)
 
-        logger.debug("Received request:", data)
+        logger.debug(f"Received request: {data}")
 
         if not isinstance(data, dict):
             return Response(500, content="Received non-JSON data, cannot cast to dict")
@@ -190,6 +202,7 @@ class Adapter(BaseAdapter):
 
             if event := self.json_to_event(data):
                 bot = cast("Bot", bot)
+                logger.debug("Prepare to handle event")
                 task = asyncio.create_task(bot.handle_event(event))
                 task.add_done_callback(self.tasks.discard)
                 self.tasks.add(task)

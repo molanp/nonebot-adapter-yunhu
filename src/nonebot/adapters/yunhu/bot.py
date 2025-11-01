@@ -54,6 +54,45 @@ async def _check_reply(bot: "Bot", event: "Event"):
             logger.error("Failed to get reply message", e)
 
 
+def _check_at_me(bot: "Bot", event: "Event"):
+    """
+    :说明:
+
+      检查消息是否提及Bot， 并去除@内容
+    :参数:
+
+      * ``bot: Bot``: Bot 对象
+      * ``event: Event``: Event 对象
+    """
+    if not isinstance(event, MessageEvent):
+        return
+
+    at_list = event.event.message.content.at
+    if not at_list:
+        return
+
+    if bot.bot_config.app_id in at_list:
+        event.to_me = True
+
+        message = event.get_message()
+
+        i = 0
+        while i < len(message):
+            seg = message[i]
+            # 如果是@消息段且是@当前机器人
+            if seg.type == "at" and seg.data.get("user_id") == bot.bot_config.app_id:
+                # 移除这个@消息段
+                message.pop(i)
+                # 如果前面有文本段，去除末尾空格
+                if i > 0 and message[i - 1].type == "text":
+                    message[i - 1].data["text"] = message[i - 1].data["text"].rstrip()
+                # 如果后面还有文本段，去除开头空格
+                if i < len(message) and message[i].type == "text":
+                    message[i].data["text"] = message[i].data["text"].lstrip()
+            else:
+                i += 1
+
+
 def _check_nickname(bot: "Bot", event: "Event"):
     """
     :说明:
@@ -67,8 +106,6 @@ def _check_nickname(bot: "Bot", event: "Event"):
     """
     if not isinstance(event, MessageEvent):
         return
-    assert isinstance(event, MessageEvent)
-
     first_msg_seg: MessageSegment = event.get_message()[0]
     if first_msg_seg.type != "text":
         return
@@ -115,7 +152,16 @@ async def send(
     full_message = Message()  # create a new message for prepending
     at_sender = at_sender and bool(event.get_user_id())
     if at_sender:
-        full_message += At("at", {"user_id": event.get_user_id()}) + " "
+        full_message += (
+            At(
+                "at",
+                {
+                    "user_id": event.get_user_id(),
+                    "name": event.event.sender.senderNickname,
+                },
+            )
+            + " "
+        )
     full_message += message
 
     content, msg_type = full_message.serialize()
@@ -336,6 +382,7 @@ class Bot(BaseBot):
                 message=response.get("msg", "Unknown error"),
             )
         return response["data"]["imageKey"]
+
     @override
     async def send(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
@@ -376,6 +423,7 @@ class Bot(BaseBot):
 
     async def handle_event(self, event: Event) -> None:
         if isinstance(event, MessageEvent):
+            _check_at_me(self, event)
             _check_nickname(self, event)
             await _check_reply(self, event)
         await handle_event(self, event)

@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field
-from nonebot.compat import model_validator
+from nonebot.compat import model_validator, model_dump
 
 
 class EventHeader(BaseModel):
@@ -44,17 +44,24 @@ class Chat(BaseModel):
 class CommonContent(BaseModel):
     """通用消息内容"""
 
-    at: Optional[list[str]] = Field(None, exclude=True)
+    at: Optional[list[str]] = Field(None)
     """被@的成员id列表"""
+    
+    def to_dict(self) -> dict:
+        return model_dump(self)
+
 
 
 class TextContent(CommonContent):
-    contentType: Literal["text"] = Field("text", exclude=True)
+    contentType: Literal["text"] = Field("text")
     text: str
+
+    def to_dict(self) -> dict:
+        return {"text": self.text}
 
 
 class ImageContent(CommonContent):
-    contentType: Literal["image"] = Field("image", exclude=True)
+    contentType: Literal["image"] = Field("image")
     imageUrl: str
     """图片地址(直接访问需要Refer:https://www.yhchat.com/)"""
     imageName: str
@@ -64,29 +71,35 @@ class ImageContent(CommonContent):
     """图片宽度 (像素)"""
     imageHeight: int
     """图片高度 (像素)"""
+    
+    def to_dict(self) -> dict:
+        return {"imageKey": self.imageName.split(".")[0]}
 
 
 class VideoContent(CommonContent):
-    contentType: Literal["video"] = Field("video", exclude=True)
+    contentType: Literal["video"] = Field("video")
     videoUrl: str
     """视频地址(需要拼接baseUrl)"""
     etag: str
     videoDuration: int
     """视频时长 (秒)"""
+    
+    def to_dict(self) -> dict:
+        return {"videoKey": self.videoUrl.split(".")[0]}
 
 
 class HTMLContent(CommonContent):
-    contentType: Literal["html"] = Field("html", exclude=True)
+    contentType: Literal["html"] = Field("html")
     text: str
 
 
 class MarkdownContent(CommonContent):
-    contentType: Literal["markdown"] = Field("markdown", exclude=True)
+    contentType: Literal["markdown"] = Field("markdown")
     text: str
 
 
 class FileContent(CommonContent):
-    contentType: Literal["file"] = Field("file", exclude=True)
+    contentType: Literal["file"] = Field("file")
     fileName: str
     """文件名"""
     fileUrl: str
@@ -94,10 +107,13 @@ class FileContent(CommonContent):
     fileSize: int
     """文件大小 (字节)"""
     etag: str
+    
+    def to_dict(self) -> dict:
+        return {"fileKey": self.fileName.split(".")[0]}
 
 
 class ExpressionContent(CommonContent):
-    contentType: Literal["expression"] = Field("expression", exclude=True)
+    contentType: Literal["expression"] = Field("expression")
     imageName: str
     """表情包路径"""
     expressionId: int
@@ -132,7 +148,7 @@ class FormDetail(BaseModel):
 
 
 class FormContent(CommonContent):
-    contentType: Literal["form"] = Field("form", exclude=True)
+    contentType: Literal["form"] = Field("form")
     formJson: Dict[str, FormDetail]
     """表单数据"""
 
