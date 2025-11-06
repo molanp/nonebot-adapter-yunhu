@@ -259,7 +259,7 @@ class Reply(BaseModel):
         "text", "image", "markdown", "file", "video", "html", "expression", "form"
     ]
     """消息内容类型"""
-    content: Content
+    content: Union[Content, dict]
     """消息正文（根据 contentType 解析为不同模型）"""
     commandId: Optional[int] = None
     """指令ID, 可用来区分用户发送的指令"""
