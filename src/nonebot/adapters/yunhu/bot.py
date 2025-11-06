@@ -49,7 +49,7 @@ async def _check_reply(bot: "Bot", event: "Event"):
                 event.reply = result
 
         except Exception as e:
-            logger.error("Failed to get reply message", e)
+            logger.error(f"Failed to get reply message e:{e}")
 
 
 def _check_at_me(bot: "Bot", event: "Event"):
@@ -293,17 +293,11 @@ class Bot(BaseBot):
                 **params,
             },
         )
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ActionFailed(
-                message=response.content,
-            ) from e
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
             )
-        return response["data"]["list"][0]
+        return type_validate_python(list[Reply], response["data"]["list"])
 
     async def get_msg(
         self, message_id: str, chat_id: str, chat_type: Literal["group", "user", "bot"]
@@ -320,12 +314,6 @@ class Bot(BaseBot):
                 "before": 1,
             },
         )
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ActionFailed(
-                message=response.content,
-            ) from e
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
@@ -366,16 +354,14 @@ class Bot(BaseBot):
         )
 
     async def reply_msg(self, message_id: str, content: dict, content_type: str):
-        json = {
-            "content": content,
-            "contentType": content_type,
-            "parentId": message_id,
-        }
-
         return await self.call_api(
             "bot/send",
             method="POST",
-            json=json,
+            json={
+                "content": content,
+                "contentType": content_type,
+                "parentId": message_id,
+            },
         )
 
     async def get_group_info(self, group_id: str):
@@ -567,12 +553,6 @@ class Bot(BaseBot):
         files = [("file", file)]
 
         response = await self.call_api("file/upload", method="POST", files=files)
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ActionFailed(
-                message=response.content,
-            ) from e
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
@@ -589,12 +569,6 @@ class Bot(BaseBot):
         videos = [("video", video)]
 
         response = await self.call_api("video/upload", method="POST", files=videos)
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ActionFailed(
-                message=response.content,
-            ) from e
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
@@ -611,12 +585,6 @@ class Bot(BaseBot):
         images = [("image", image)]
 
         response = await self.call_api("image/upload", method="POST", files=images)
-        try:
-            response = json.loads(response)
-        except Exception as e:
-            raise ActionFailed(
-                message=response.content,
-            ) from e
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
