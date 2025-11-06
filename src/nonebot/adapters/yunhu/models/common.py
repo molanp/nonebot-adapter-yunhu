@@ -255,7 +255,9 @@ class Reply(BaseModel):
     """发送者类型"""
     senderNickname: str
     """发送者昵称"""
-    contentType: Literal["text", "image", "markdown", "file", "video", "html"]
+    contentType: Literal[
+        "text", "image", "markdown", "file", "video", "html", "expression", "form"
+    ]
     """消息内容类型"""
     content: Content
     """消息正文（根据 contentType 解析为不同模型）"""
