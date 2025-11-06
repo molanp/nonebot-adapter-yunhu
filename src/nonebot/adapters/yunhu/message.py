@@ -7,7 +7,7 @@ from typing_extensions import override, NotRequired
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
 
-from .models.common import Content, TextContent
+from .models.common import Content, HTMLContent, MarkdownContent, TextContent
 
 
 class MessageSegment(BaseMessageSegment["Message"]):
@@ -227,7 +227,7 @@ class Message(BaseMessage[MessageSegment]):
         content: Content,
         at_list: Optional[list[str]],
         message_type: Literal[
-            "text", "image", "markdown", "file", "video", "html", "expression", "form"
+            "text", "image", "markdown", "file", "video", "html", "expression", "form", "tip"
         ],
         command_name: Optional[str] = None,
     ) -> "Message":
@@ -235,8 +235,8 @@ class Message(BaseMessage[MessageSegment]):
         msg = Message(command_name)
         parsed_content = content.to_dict()
 
-        if message_type == "text":
-            assert isinstance(content, TextContent)
+        if message_type in ["text", "markdown", "html"]:
+            assert isinstance(content, Union[TextContent, MarkdownContent, HTMLContent])
             text = content.text
             text_begin = 0
 
@@ -286,8 +286,10 @@ class Message(BaseMessage[MessageSegment]):
 
         # 处理其他消息类型
         elif seg_builder := getattr(MessageSegment, message_type, None):
+            parsed_content.pop("at", None)
             msg.append(seg_builder(**parsed_content))
         else:
+            parsed_content.pop("at", None)
             msg.append(MessageSegment(message_type, parsed_content))
 
         return msg

@@ -65,7 +65,6 @@ class ImageContent(CommonContent):
     """图片地址(直接访问需要Refer:https://www.yhchat.com/)"""
     imageName: str
     """图片文件名，可用于发送"""
-    etag: str
     imageWidth: int
     """图片宽度 (像素)"""
     imageHeight: int
@@ -180,7 +179,14 @@ class EventMessage(BaseModel):
     chatType: Literal["group", "bot"]
     """当前聊天的对象类型(group: 群聊, bot: 单聊)"""
     contentType: Literal[
-        "text", "image", "markdown", "file", "video", "html", "expression", "form"
+        "text",
+        "image",
+        "markdown",
+        "file",
+        "video",
+        "html",
+        "expression",
+        "form",
     ]
     """消息内容类型（可能不存在于 incoming content）"""
     # 使用 discriminator 让 pydantic 根据 content.contentType 选择子模型
@@ -213,7 +219,7 @@ class EventMessage(BaseModel):
             values["content"] = content
             return values
 
-        # 启发式推断（根据云湖实际字段调整规则）
+        # 启发式推断
         ct: Optional[str] = None
         if "text" in content:
             ct = "text"
@@ -227,7 +233,7 @@ class EventMessage(BaseModel):
             ct = "video"
         elif "formJson" in content:
             ct = "form"
-        elif "expressionId" in content or "stickerId" in content:
+        elif "expressionId" in content:
             ct = "expression"
         # 回填
         if ct:

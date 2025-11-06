@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import inspect
 import json
 from typing import Any, Optional, cast
@@ -110,7 +109,7 @@ class Adapter(BaseAdapter):
                 "doesn't support http client requests!"
                 f"{self.get_name()} Adapter needs a HTTPClient Driver to work."
             )
-        self.driver.on_startup(self.startup)
+        self.on_ready(self.startup)
 
     def get_api_url(self, path: str) -> URL:
         return URL("https://chat-go.jwzhd.com").joinpath("open-apis/v1/", path)
@@ -125,7 +124,6 @@ class Adapter(BaseAdapter):
             ),
         )
         return type_validate_python(BotInfo, response)
-
 
     async def send_request(self, request: Request, **data: Any):
         return_response = data.get("_return_response", False)
@@ -171,8 +169,8 @@ class Adapter(BaseAdapter):
         if p := data.get("params"):
             params |= p
         request = Request(
-            data["method"],
-            self.get_api_url(api),
+            method=data["method"],
+            url=api if api.startswith("https://") else self.get_api_url(api),
             files=data.get("files"),
             json=data.get("json"),
             data=data.get("data"),
@@ -234,7 +232,7 @@ class Adapter(BaseAdapter):
                     event = type_validate_python(model, json_data)
                     break
                 except Exception:
-                    logger.warning(f"Unsupported event type: {event_type}")
+                    logger.warning(f"Unsupported event: {json_data}")
             else:
                 event = type_validate_python(Event, json_data)
 
@@ -255,9 +253,3 @@ class Adapter(BaseAdapter):
         return [model.value for model in cls.event_models.prefixes(f".{event_name}")][
             ::-1
         ]
-
-    async def shutdown(self) -> None:
-        for _, bot in self.bots.items():
-            with contextlib.suppress(Exception):
-                self.bot_disconnect(bot)
-            logger.info(f"Bot {bot.self_id} 已断开")

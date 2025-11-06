@@ -8,7 +8,6 @@ from nonebot.adapters import Bot as BaseBot
 from nonebot.log import logger
 from nonebot.compat import type_validate_python
 from nonebot.message import handle_event
-from nonebot.drivers import Request
 
 
 from .models import Reply, SendMsgResponse, GroupInfo, UserInfo, BoardResponse
@@ -264,7 +263,6 @@ class Bot(BaseBot):
     """Bot 配置"""
     nickname: str
     """Bot 昵称"""
-    yunhu_adapter: "Adapter"
 
     @override
     def __init__(
@@ -278,7 +276,6 @@ class Bot(BaseBot):
         super().__init__(adapter, self_id)
         self.bot_config = bot_config
         self.nickname = nickname
-        self.yunhu_adapter = adapter
 
     async def get_msgs(
         self, chat_id: str, chat_type: Literal["user", "hroup"], **params: Any
@@ -366,24 +363,20 @@ class Bot(BaseBot):
     async def get_group_info(self, group_id: str):
         """获取群信息"""
 
-        response = await self.yunhu_adapter.send_request(
-            Request(
-                "POST",
-                "https://chat-web-go.jwzhd.com/v1/group/group-info",
-                json={"groupId": group_id},
-            ),
+        response = await self.call_api(
+            "https://chat-web-go.jwzhd.com/v1/group/group-info",
+            method="POST",
+            json={"groupId": group_id},
         )
         return type_validate_python(GroupInfo, response)
 
     async def get_user_info(self, user_id: str):
         """获取用户信息"""
 
-        response = await self.yunhu_adapter.send_request(
-            Request(
-                "POST",
-                "https://chat-web-go.jwzhd.com/v1/user/homepage",
-                json={"userId": user_id},
-            ),
+        response = await self.call_api(
+            "https://chat-web-go.jwzhd.com/v1/user/homepage",
+            method="POST",
+            json={"userId": user_id},
         )
         return type_validate_python(UserInfo, response)
 
