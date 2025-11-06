@@ -227,7 +227,7 @@ class Message(BaseMessage[MessageSegment]):
         content: Content,
         at_list: Optional[list[str]],
         message_type: Literal[
-            "text", "image", "markdown", "file", "video", "html", "expression", "form", "tip"
+            "text", "image", "markdown", "file", "video", "html", "expression", "form"
         ],
         command_name: Optional[str] = None,
     ) -> "Message":
