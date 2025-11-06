@@ -88,6 +88,8 @@ async def handle_echo(bot: Bot, event: MessageEvent):
 
 ### 发送不同类型的消息
 
+具体类型参考`message.py`
+
 ```python
 from nonebot import on_command
 from nonebot.adapters.yunhu import Bot, MessageEvent, MessageSegment
@@ -99,7 +101,7 @@ async def handle_send_image(bot: Bot, event: MessageEvent):
     # 发送文本
     await bot.send(event, MessageSegment.text("Hello World"))
 
-    # 发送图片（需要先上传图片获取 image_key）
+    # 发送图片（需要先上传图片获取 image_key）/ 也可以直接传参raw=bytes,适配器会自动上传
     await bot.send(event, MessageSegment.image("image_key"))
 
     # @某人
@@ -113,6 +115,15 @@ async def handle_send_image(bot: Bot, event: MessageEvent):
 - ✅ 完整的事件系统支持
 - ✅ 易于使用的 API 封装
 - ✅ 良好的类型提示支持
+
+## 支持
+
+<img width="1440" height="2296" alt="image" src="https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f" />
+
+* 访问链接加入云湖群聊【NoneBot云湖适配器交流群】
+* https://yhfx.jwznb.com/share?key=85HNqkjNINWc&ts=1762393601 
+* 群ID: 519215204
+
 
 ## 许可证
 
