@@ -46,10 +46,9 @@ class CommonContent(BaseModel):
 
     at: Optional[list[str]] = Field(None)
     """被@的成员id列表"""
-    
+
     def to_dict(self) -> dict:
         return model_dump(self)
-
 
 
 class TextContent(CommonContent):
@@ -71,7 +70,7 @@ class ImageContent(CommonContent):
     """图片宽度 (像素)"""
     imageHeight: int
     """图片高度 (像素)"""
-    
+
     def to_dict(self) -> dict:
         return {"imageKey": self.imageName.split(".")[0]}
 
@@ -83,7 +82,7 @@ class VideoContent(CommonContent):
     etag: str
     videoDuration: int
     """视频时长 (秒)"""
-    
+
     def to_dict(self) -> dict:
         return {"videoKey": self.videoUrl.split(".")[0]}
 
@@ -107,7 +106,7 @@ class FileContent(CommonContent):
     fileSize: int
     """文件大小 (字节)"""
     etag: str
-    
+
     def to_dict(self) -> dict:
         return {"fileKey": self.fileName.split(".")[0]}
 
@@ -122,6 +121,8 @@ class ExpressionContent(CommonContent):
     """表情包宽度"""
     imageHeight: int
     """表情包高度"""
+
+
 class FormDetail(BaseModel):
     id: str
     """表单ID"""
@@ -250,7 +251,7 @@ class Reply(BaseModel):
     """引用消息时的父消息ID"""
     senderId: str
     """发送者ID"""
-    senderType: Literal["bot", "group"]
+    senderType: Literal["bot", "user"]
     """发送者类型"""
     senderNickname: str
     """发送者昵称"""
