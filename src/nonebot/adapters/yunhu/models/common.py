@@ -117,17 +117,11 @@ class ExpressionContent(CommonContent):
     imageName: str
     """表情包路径"""
     expressionId: int
-    """"""
-    stickerId: int
     """表情包ID"""
-    stickerPackId: int
-    """表情包组ID"""
     imageWidth: int
     """表情包宽度"""
     imageHeight: int
     """表情包高度"""
-
-
 class FormDetail(BaseModel):
     id: str
     """表单ID"""
@@ -256,7 +250,7 @@ class Reply(BaseModel):
     """引用消息时的父消息ID"""
     senderId: str
     """发送者ID"""
-    senderType: Literal["user"]
+    senderType: Literal["bot", "group"]
     """发送者类型"""
     senderNickname: str
     """发送者昵称"""
