@@ -1,5 +1,4 @@
 from io import BytesIO
-import json
 from pathlib import Path
 import re
 from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union

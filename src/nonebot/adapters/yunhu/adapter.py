@@ -233,8 +233,8 @@ class Adapter(BaseAdapter):
                 try:
                     event = type_validate_python(model, json_data)
                     break
-                except Exception as e:
-                    logger.error(f"Event Parser Error {e}")
+                except Exception:
+                    logger.warning(f"Unsupported event type: {event_type}")
             else:
                 event = type_validate_python(Event, json_data)
 
