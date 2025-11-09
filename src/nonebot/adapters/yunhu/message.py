@@ -7,6 +7,7 @@ from typing_extensions import override, NotRequired
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
 from nonebot.compat import model_dump
+from nonebot.log import logger
 
 from .models.common import (
     ButtonBody,
@@ -90,6 +91,11 @@ class MessageSegment(BaseMessageSegment["Message"]):
         :type buttons: list[list[ButtonBody]]
         """
         return Buttons("button", {"buttons": buttons})
+
+    @staticmethod
+    def audio(audioUrl: str, audioDuration: int):
+        """语音消息，只收不发"""
+        return Audio("audio", {"audioUrl": audioUrl, "audioDuration": audioDuration})
 
 
 class _TextData(TypedDict):
@@ -200,6 +206,21 @@ class Buttons(MessageSegment):
         return f"[buttons:{self.data['buttons']}]"
 
 
+class _AudioData(TypedDict):
+    audioUrl: str
+    audioDuration: int
+
+
+@dataclass
+class Audio(MessageSegment):
+    if TYPE_CHECKING:
+        data: _AudioData  # type: ignore
+
+    @override
+    def __str__(self) -> str:
+        return f"[audio:{self.data['audioUrl']}]"
+
+
 class Message(BaseMessage[MessageSegment]):
     """
     云湖 协议 Message 适配。
@@ -233,6 +254,9 @@ class Message(BaseMessage[MessageSegment]):
 
     def serialize(self) -> tuple[dict, str]:
         result = {}
+        if "audio" in self:
+            logger.warning("Sending audio is not supported")
+            self.exclude("audio")
         if "buttons" in self:
             buttons = self["buttons"]
             assert isinstance(buttons, Buttons)
@@ -272,12 +296,14 @@ class Message(BaseMessage[MessageSegment]):
             "expression",
             "form",
             "tip",
+            "audio",
         ],
         command_name: Optional[str] = None,
     ) -> "Message":
         command_name = f"{command_name} " if command_name else None
         msg = Message(command_name)
         parsed_content = content.to_dict()
+        parsed_content.pop("contentType", None)
 
         if message_type in ["text", "markdown", "html"]:
             assert isinstance(content, Union[TextContent, MarkdownContent, HTMLContent])

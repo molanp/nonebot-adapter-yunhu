@@ -190,14 +190,12 @@ class Adapter(BaseAdapter):
             return Response(403, content="Corresponding bot config not found")
 
         if (data := request.content) is not None:
-            logger.debug(f"Received request: {data}")
             try:
                 data = json.loads(data)
             except json.JSONDecodeError:
                 return Response(400, content="Received non-JSON data")
 
-        if not isinstance(data, dict):
-            return Response(500, content="Received non-JSON data, cannot cast to dict")
+        logger.debug(f"Received request: {data}")
 
         if data is not None:
             if not (bot := self.bots.get(bot_config.app_id)):

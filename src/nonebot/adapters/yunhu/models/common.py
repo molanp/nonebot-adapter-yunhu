@@ -154,6 +154,16 @@ class TipContent(CommonContent):
     """提示信息"""
 
 
+class AudioContent(CommonContent):
+    """音频数据，只收不发"""
+
+    contentType: Literal["audio"] = Field("audio")
+    audioUrl: str
+    """音频endpoint, 自己拼base_url"""
+    audioDuration: int
+    """音频时长,单位秒"""
+
+
 Content = Union[
     TextContent,
     HTMLContent,
@@ -164,6 +174,7 @@ Content = Union[
     ExpressionContent,
     FormContent,
     TipContent,
+    AudioContent
 ]
 
 
@@ -196,6 +207,7 @@ class EventMessage(BaseModel):
         "expression",
         "form",
         "tip",
+        "audio"
     ]
     """消息内容类型（可能不存在于 incoming content）"""
     # 使用 discriminator 让 pydantic 根据 content.contentType 选择子模型

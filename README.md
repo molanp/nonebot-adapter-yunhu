@@ -13,17 +13,47 @@ _✨ YunHu adapter for NoneBot2 ✨_
 
 </div>
 
-## 事件支持情况
+## 支持情况
+
+### 事件支持情况
 
 - [x] 基础消息事件
-- [ ] 按钮事件接收
-- [ ] 机器人设置消息事件
-- [ ] 按钮发送
+- [ ] 按钮事件上报接收
+- [ ] 机器人设置事件
+- [x] 按钮发送
 - [ ] 表单发送
+
+### 支持的消息元素
+
+| 元素              | 支持情况 |
+| ----------------- | -------- |
+| 文本 Text         | ✅       |
+| 图片 Image        | ✅       |
+| 提及用户 At(user) | ✅       |
+| 按钮 Buttons      | ⬆️       |
+| 表单 Form         | ❌       |
+| 表情包 expression | ⬇️       |
+| 语音 Audio        | ⬇️       |
+| 视频 Video        | ✅       |
+| 文件 File         | ✅       |
+| HTML HTML         | ✅       |
+| 文章 Post         | ❌       |
+| Markdown          | ✅       |
+| 提示信息 Tip      | ⬇️       |
+| 回复 Reply        | ✅       |
+
+### 支持的消息操作
+
+| 操作              | 支持情况 |
+| ----------------- | -------- |
+| 发送 Send         | ✅       |
+| 撤回 Recall       | ✅       |
+| 编辑 Edit         | ✅       |
+| 表情响应 Reaction | 🚫       |
 
 ## 简介
 
-`nonebot-adapter-yunhu` 是一个为 [NoneBot2](https://github.com/nonebot/nonebot2) 设计的云湖(YunHu)平台适配器。它允许您使用 NoneBot2 框架开发云湖机器人，提供了对云湖平台消息和服务的完整支持。
+`nonebot-adapter-yunhu` 是为 [NoneBot2](https://github.com/nonebot/nonebot2) 设计的云湖(YunHu)平台适配器，支持开发云湖机器人，提供完整的消息和服务支持。
 
 ## 安装
 
@@ -88,7 +118,7 @@ async def handle_echo(bot: Bot, event: MessageEvent):
 
 ### 发送不同类型的消息
 
-具体类型参考`message.py`
+具体类型参考 `message.py`
 
 ```python
 from nonebot import on_command
@@ -108,26 +138,12 @@ async def handle_send_image(bot: Bot, event: MessageEvent):
     await bot.send(event, MessageSegment.at("user_id"))
 ```
 
-## 特性
+## 获取帮助
 
-- ✅ 支持接收和发送多种类型的消息
-- ✅ 支持 Webhook 回调模式
-- ✅ 完整的事件系统支持
-- ✅ 易于使用的 API 封装
-- ✅ 良好的类型提示支持
+<img alt="image" src="https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f" />
 
-## 支持
-
-<img width="1440" height="2296" alt="image" src="https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f" />
-
-* 访问链接加入云湖群聊【NoneBot云湖适配器交流群】
-* https://yhfx.jwznb.com/share?key=85HNqkjNINWc&ts=1762393601 
-* 群ID: 519215204
-
-
-## 许可证
-
-MIT License
+- 加入云湖群聊【NoneBot 云湖适配器交流群】: [链接](https://yhfx.jwznb.com/share?key=85HNqkjNINWc&ts=1762393601)
+- 群 ID: 519215204
 
 ## 相关链接
 
