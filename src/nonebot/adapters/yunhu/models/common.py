@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field
 from nonebot.compat import model_validator, model_dump
@@ -20,7 +21,7 @@ class Sender(BaseModel):
     senderType: Literal["user"]
     """发送者用户类型"""
     senderUserLevel: Literal["owner", "administrator", "member", "unknown"]
-    """发送者级别(群主、管理员、群成员、未知)"""
+    """发送者级别(群主[私聊消息也为owner]、管理员、群成员、未知[tip消息等])"""
     senderNickname: str
     """发送者昵称"""
 
@@ -147,6 +148,12 @@ class FormContent(CommonContent):
     """表单数据"""
 
 
+class TipContent(CommonContent):
+    contentType: Literal["tip"] = Field("tip")
+    text: str
+    """提示信息"""
+
+
 Content = Union[
     TextContent,
     HTMLContent,
@@ -156,6 +163,7 @@ Content = Union[
     VideoContent,
     ExpressionContent,
     FormContent,
+    TipContent,
 ]
 
 
@@ -187,6 +195,7 @@ class EventMessage(BaseModel):
         "html",
         "expression",
         "form",
+        "tip",
     ]
     """消息内容类型（可能不存在于 incoming content）"""
     # 使用 discriminator 让 pydantic 根据 content.contentType 选择子模型
@@ -303,3 +312,27 @@ class BotNoticeDetail(BaseModel):
     """触发事件用户昵称"""
     avatarUrl: str
     """触发事件用户头像URL"""
+
+
+class ButtonActionType(Enum):
+    """按钮动作类型"""
+
+    JUMP = 1
+    """跳转URL"""
+    COPY = 2
+    """复制"""
+    REPORT = 3
+    """点击汇报"""
+
+
+class ButtonBody(BaseModel):
+    """按钮消息体"""
+
+    text: str
+    """按钮上的文字"""
+    actionType: ButtonActionType
+    """按钮动作类型"""
+    url: Optional[str] = None
+    """跳转URL,当actionType为1时使用"""
+    value: Optional[str] = None
+    """当actionType为2时，该值会复制到剪贴板"""

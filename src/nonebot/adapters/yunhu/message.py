@@ -6,8 +6,15 @@ from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
+from nonebot.compat import model_dump
 
-from .models.common import Content, HTMLContent, MarkdownContent, TextContent
+from .models.common import (
+    ButtonBody,
+    Content,
+    HTMLContent,
+    MarkdownContent,
+    TextContent,
+)
 
 
 class MessageSegment(BaseMessageSegment["Message"]):
@@ -58,9 +65,9 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @staticmethod
     def video(
-        fileKey: Optional[str] = None, raw: Optional[bytes] = None
+        videoKey: Optional[str] = None, raw: Optional[bytes] = None
     ) -> "MessageSegment":
-        return Video("video", {"videoKey": fileKey, "_raw": raw})
+        return Video("video", {"videoKey": videoKey, "_raw": raw})
 
     @staticmethod
     def file(
@@ -75,6 +82,10 @@ class MessageSegment(BaseMessageSegment["Message"]):
     @staticmethod
     def html(text: str) -> "MessageSegment":
         return Html("html", {"text": text})
+
+    @staticmethod
+    def buttons(buttons: list[ButtonBody]):
+        return Buttons("button", {"buttons": buttons})
 
 
 class _TextData(TypedDict):
@@ -171,6 +182,20 @@ class File(MessageSegment):
         return f"[file:{self.data['fileKey']}]"
 
 
+class _ButtonData(TypedDict):
+    buttons: list[ButtonBody]
+
+
+@dataclass
+class Buttons(MessageSegment):
+    if TYPE_CHECKING:
+        data: _ButtonData  # type: ignore
+
+    @override
+    def __str__(self) -> str:
+        return f"[buttons:{self.data['buttons']}]"
+
+
 class Message(BaseMessage[MessageSegment]):
     """
     云湖 协议 Message 适配。
@@ -203,6 +228,13 @@ class Message(BaseMessage[MessageSegment]):
         yield Text("text", {"text": msg})
 
     def serialize(self) -> tuple[dict, str]:
+        result = {}
+        if "buttons" in self:
+            buttons = self["buttons"]
+            assert isinstance(buttons, Buttons)
+            result["buttons"] = [
+                model_dump(button) for button in buttons.data["buttons"]
+            ]
         if len(self) >= 2:
             result = {}
             _type = "text"
@@ -227,7 +259,15 @@ class Message(BaseMessage[MessageSegment]):
         content: Content,
         at_list: Optional[list[str]],
         message_type: Literal[
-            "text", "image", "markdown", "file", "video", "html", "expression", "form"
+            "text",
+            "image",
+            "markdown",
+            "file",
+            "video",
+            "html",
+            "expression",
+            "form",
+            "tip",
         ],
         command_name: Optional[str] = None,
     ) -> "Message":
