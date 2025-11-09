@@ -10,7 +10,15 @@ from nonebot.compat import type_validate_python
 from nonebot.message import handle_event
 
 
-from .models import Reply, SendMsgResponse, GroupInfo, UserInfo, BoardResponse
+from .models import (
+    Reply,
+    SendMsgResponse,
+    GroupInfo,
+    UserInfo,
+    BoardResponse,
+    BaseTextContent,
+    BASE_TEXT_TYPE,
+)
 
 from .exception import ActionFailed
 
@@ -278,8 +286,21 @@ class Bot(BaseBot):
         self.nickname = nickname
 
     async def get_msgs(
-        self, chat_id: str, chat_type: Literal["user", "hroup"], **params: Any
-    ):
+        self, chat_id: str, chat_type: Literal["user", "group"], **params: Any
+    ) -> list[Reply]:
+        """
+        获取消息列表
+
+        :params chat_id: 获取消息对象ID
+                用户: 使用userId
+                群: 使用groupId
+        :param chat_type: 获取消息对象类型
+            用户: user
+            群: group
+        :params str message_id: 起始消息ID，不填时可以配合before参数返回最近的N条消息
+        :params int before: 指定消息ID前N条，默认0条
+        :params int after: 指定消息ID后N条，默认0条
+        """
         response = await self.call_api(
             "bot/messages",
             method="GET",
@@ -298,6 +319,18 @@ class Bot(BaseBot):
     async def get_msg(
         self, message_id: str, chat_id: str, chat_type: Literal["group", "user", "bot"]
     ) -> Reply:
+        """
+        获取指定消息
+
+        :params str message_id: 消息ID
+        :params str chat_id: 获取消息对象ID
+                用户: 使用userId
+                群: 使用groupId
+        :param chat_type: 获取消息对象类型
+            用户: user
+            机器人: bot(自动转为user)
+            群: group
+        """
         if chat_type == "bot":
             chat_type = "user"
         response = await self.call_api(
@@ -319,6 +352,17 @@ class Bot(BaseBot):
     async def delete_msg(
         self, message_id: str, chat_id: str, chat_type: Literal["user", "group"]
     ):
+        """
+        撤回指定消息
+
+        :params str message_id: 撤回消息ID
+        :params str chat_id: 撤回消息对象ID
+                用户: 使用userId
+                群: 使用groupId
+        :param chat_type: 撤回消息对象类型
+            用户: user
+            群: group
+        """
         return await self.call_api(
             "bot/recall",
             method="POST",
@@ -333,10 +377,23 @@ class Bot(BaseBot):
         self,
         message_id: str,
         recvId: str,
-        recvType: str,
-        content: dict,
-        content_type: Literal["text", "html", "markdown"],
+        recvType: Literal["user", "group"],
+        content: BaseTextContent,
+        content_type: BASE_TEXT_TYPE,
     ):
+        """
+        编辑消息
+
+        :params str message_id: 消息ID
+        :params str recvId: 接收对象ID
+                用户: 使用userId
+                群: 使用groupId
+        :param recvType: 接收对象类型
+            用户: user
+            群: group
+        :params content: 消息内容
+        :param content_type: 消息类型
+        """
         return await self.call_api(
             "bot/edit",
             method="POST",
@@ -346,17 +403,6 @@ class Bot(BaseBot):
                 "recvType": recvType,
                 "contentType": content_type,
                 "content": content,
-            },
-        )
-
-    async def reply_msg(self, message_id: str, content: dict, content_type: str):
-        return await self.call_api(
-            "bot/send",
-            method="POST",
-            json={
-                "content": content,
-                "contentType": content_type,
-                "parentId": message_id,
             },
         )
 
@@ -382,8 +428,8 @@ class Bot(BaseBot):
 
     async def set_group_board(
         self,
-        content: str,
-        content_type: Literal["text", "markdown", "html"],
+        content: BaseTextContent,
+        content_type: BASE_TEXT_TYPE,
         group_id: str,
         memberId: Optional[str] = None,
         expire_time: int = 0,
@@ -435,8 +481,8 @@ class Bot(BaseBot):
 
     async def set_user_board(
         self,
-        content: str,
-        content_type: Literal["text", "markdown", "html"],
+        content: BaseTextContent,
+        content_type: BASE_TEXT_TYPE,
         user_id: str,
         expire_time: int = 0,
     ):
@@ -482,8 +528,8 @@ class Bot(BaseBot):
 
     async def set_all_board(
         self,
-        content: str,
-        content_type: Literal["text", "markdown", "html"],
+        content: BaseTextContent,
+        content_type: BASE_TEXT_TYPE,
         expire_time: int = 0,
     ):
         """
@@ -518,10 +564,22 @@ class Bot(BaseBot):
         self,
         receive_type: Literal["group", "user"],
         receive_id: str,
-        content: dict,
+        content: dict[str, Any],
         content_type: str,
         parent_id: Optional[str] = None,
     ):
+        """
+        发送消息
+
+        :param receive_type: 接收对象类型
+                用户: user
+                群: group
+        :param receive_id: 接收对象ID
+                用户: 使用userId
+                群: 使用groupId
+        :param content_type: 消息类型,取值如下text/image/video/file/markdown/html
+        :param parent_id: 被引用的消息ID
+        """
         result = await self.call_api(
             "bot/send",
             method="POST",

@@ -235,6 +235,7 @@ class Adapter(BaseAdapter):
                     break
                 except Exception:
                     logger.warning(f"Unsupported event: {json_data}")
+                    return
             else:
                 event = type_validate_python(Event, json_data)
 

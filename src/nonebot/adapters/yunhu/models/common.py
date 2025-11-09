@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, Optional, Union, Dict, Any
+from typing import Literal, Optional, TypedDict, Union, Dict, Any
 from pydantic import BaseModel, Field
 from nonebot.compat import model_validator, model_dump
 
@@ -48,16 +48,16 @@ class CommonContent(BaseModel):
     at: Optional[list[str]] = Field(None)
     """被@的成员id列表"""
 
-    def to_dict(self) -> dict:
-        return model_dump(self)
+    def to_dict(self) -> dict[str, Any]:
+        """通用模型解构"""
+        dict_ = model_dump(self)
+        dict_.pop("contentType", None)
+        return dict_
 
 
 class TextContent(CommonContent):
     contentType: Literal["text"] = Field("text")
     text: str
-
-    def to_dict(self) -> dict:
-        return {"text": self.text}
 
 
 class ImageContent(CommonContent):
@@ -174,7 +174,7 @@ Content = Union[
     ExpressionContent,
     FormContent,
     TipContent,
-    AudioContent
+    AudioContent,
 ]
 
 
@@ -207,7 +207,7 @@ class EventMessage(BaseModel):
         "expression",
         "form",
         "tip",
-        "audio"
+        "audio",
     ]
     """消息内容类型（可能不存在于 incoming content）"""
     # 使用 discriminator 让 pydantic 根据 content.contentType 选择子模型
@@ -348,3 +348,15 @@ class ButtonBody(BaseModel):
     """跳转URL,当actionType为1时使用"""
     value: Optional[str] = None
     """当actionType为2时，该值会复制到剪贴板"""
+
+
+class BaseTextContent(TypedDict, total=False):
+    """基础文本消息内容"""
+
+    text: str
+    """文本内容"""
+    at: Optional[list[str]]
+    """提及用户id列表"""
+
+
+BASE_TEXT_TYPE = Literal["text", "markdown", "html"]

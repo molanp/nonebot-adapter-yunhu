@@ -303,7 +303,6 @@ class Message(BaseMessage[MessageSegment]):
         command_name = f"{command_name} " if command_name else None
         msg = Message(command_name)
         parsed_content = content.to_dict()
-        parsed_content.pop("contentType", None)
 
         if message_type in ["text", "markdown", "html"]:
             assert isinstance(content, Union[TextContent, MarkdownContent, HTMLContent])
