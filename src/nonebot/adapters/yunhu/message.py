@@ -84,7 +84,11 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Html("html", {"text": text})
 
     @staticmethod
-    def buttons(buttons: list[ButtonBody]):
+    def buttons(buttons: list[list[ButtonBody]]):
+        """
+        :param buttons: 按钮列表，子列表为每一行的按钮
+        :type buttons: list[list[ButtonBody]]
+        """
         return Buttons("button", {"buttons": buttons})
 
 
@@ -183,7 +187,7 @@ class File(MessageSegment):
 
 
 class _ButtonData(TypedDict):
-    buttons: list[ButtonBody]
+    buttons: list[list[ButtonBody]]
 
 
 @dataclass
@@ -233,7 +237,7 @@ class Message(BaseMessage[MessageSegment]):
             buttons = self["buttons"]
             assert isinstance(buttons, Buttons)
             result["buttons"] = [
-                model_dump(button) for button in buttons.data["buttons"]
+                model_dump(b) for button in buttons.data["buttons"] for b in button
             ]
         if len(self) >= 2:
             result = {}
