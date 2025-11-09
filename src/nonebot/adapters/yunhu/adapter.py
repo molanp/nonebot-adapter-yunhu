@@ -63,7 +63,6 @@ class Adapter(BaseAdapter):
     async def startup(self):
         for yhc in self.configs.yunhu_bots:
             if not yhc.app_id or not yhc.token:
-                logger.warning(f"缺少配置项: app_id={yhc.app_id}, token={yhc.token}")
                 continue
             result = await self.get_bot_info(yhc)
             if result.code != 1:
@@ -87,14 +86,6 @@ class Adapter(BaseAdapter):
             )
             logger.info(f"当前 Bot 使用人数: {bot_info.headcount}")
 
-            setup = HTTPServerSetup(
-                URL(f"/yunhu/{yhc.app_id}"),
-                "POST",
-                self.get_name(),
-                self._handle_http,
-            )
-            self.setup_http_server(setup)
-
     def setup(self) -> None:
         if not isinstance(self.driver, ASGIMixin):
             raise RuntimeError(
@@ -109,6 +100,17 @@ class Adapter(BaseAdapter):
                 "doesn't support http client requests!"
                 f"{self.get_name()} Adapter needs a HTTPClient Driver to work."
             )
+        for yhc in self.configs.yunhu_bots:
+            if not yhc.app_id or not yhc.token:
+                logger.warning(f"缺少配置项: app_id={yhc.app_id}, token={yhc.token}")
+                continue
+            setup = HTTPServerSetup(
+                URL(f"/yunhu/{yhc.app_id}"),
+                "POST",
+                self.get_name(),
+                self._handle_http,
+            )
+            self.setup_http_server(setup)
         self.on_ready(self.startup)
 
     def get_api_url(self, path: str) -> URL:
@@ -185,19 +187,21 @@ class Adapter(BaseAdapter):
     async def _handle_http(self, request: Request) -> Response:
         bot_config = self.bot_apps.get(request.url.parts[-1])
         if bot_config is None:
-            raise RuntimeError("Corresponding bot config not found")
+            return Response(403, content="Corresponding bot config not found")
 
         if (data := request.content) is not None:
-            data = json.loads(data)
-
-        logger.debug(f"Received request: {data}")
+            logger.debug(f"Received request: {data}")
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                return Response(400, content="Received non-JSON data")
 
         if not isinstance(data, dict):
             return Response(500, content="Received non-JSON data, cannot cast to dict")
 
         if data is not None:
             if not (bot := self.bots.get(bot_config.app_id)):
-                raise RuntimeError("Corresponding Bot instance not found")
+                return Response(404, content="Corresponding Bot instance not found")
 
             if event := self.json_to_event(data):
                 bot = cast("Bot", bot)
