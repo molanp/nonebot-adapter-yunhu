@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 import re
-from typing import TYPE_CHECKING, Literal, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
 from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
@@ -30,7 +30,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @override
     def is_text(self) -> bool:
-        return self.type in ["text", "markdown", "html"]
+        return self.type in ("text", "markdown", "html")
 
     @override
     def __str__(self) -> str:
@@ -252,8 +252,8 @@ class Message(BaseMessage[MessageSegment]):
     def _construct(msg: str) -> Iterable[MessageSegment]:
         yield Text("text", {"text": msg})
 
-    def serialize(self) -> tuple[dict, str]:
-        result = {}
+    def serialize(self) -> tuple[dict[str, Any], str]:
+        result = {"at": []}
         if "audio" in self:
             logger.warning("Sending audio is not supported")
             self.exclude("audio")
@@ -263,15 +263,28 @@ class Message(BaseMessage[MessageSegment]):
             result["buttons"] = [
                 model_dump(b) for button in buttons.data["buttons"] for b in button
             ]
+
         if len(self) >= 2:
-            result = {}
             _type = "text"
+            prev_type: Optional[str] = None
+
             for seg in self:
                 if isinstance(seg, At):
                     result["at"].append(seg.data["user_id"])
+                    continue
+
+                # 合并相邻且同类型的文本段（text/markdown/html）
+                if seg.is_text():
+                    if prev_type == seg.type and "text" in result:
+                        result["text"] = result["text"] + seg.data["text"]
+                    else:
+                        result["text"] = seg.data["text"]
                 else:
+                    # 其他类型保留现有行为（后者字段会覆盖同名字段）
                     result |= seg.data
-                    _type = seg.type
+
+                prev_type = seg.type
+                _type = seg.type
 
             return result, _type
 
@@ -280,7 +293,7 @@ class Message(BaseMessage[MessageSegment]):
                 {"at": [self.data["user_id"]]} if isinstance(self, At) else self[0].data
             ), ("text" if isinstance(self, At) else self[0].type)
         else:
-            raise ValueError("Cannot serialize empty message")
+            raise ValueError("Empty message")
 
     @staticmethod
     def deserialize(
