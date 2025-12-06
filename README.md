@@ -3,7 +3,7 @@
 </p>
 
 <div align="center">
-# NoneBot-Adapter-YunHu
+NoneBot-Adapter-YunHu
 
 _✨ YunHu adapter for NoneBot2 ✨_
 
@@ -73,6 +73,8 @@ poetry add nonebot-adapter-yunhu
 
 在您的 NoneBot 项目配置文件 `.env` 中添加以下配置：
 
+> `app_id` 是Bot的ID，可在bot信息页面查看
+
 ```env
 DRIVER=~fastapi+~httpx
 
@@ -107,12 +109,12 @@ driver.register_adapter(YunhuAdapter)
 
 ```python
 from nonebot import on_command
-from nonebot.adapters.yunhu import Bot, MessageEvent
+from nonebot.adapters.yunhu import Bot, Event
 
 echo = on_command("echo")
 
 @echo.handle()
-async def handle_echo(bot: Bot, event: MessageEvent):
+async def handle_echo(bot: Bot, event: Event):
     await echo.finish(event.get_message())
 ```
 
@@ -122,12 +124,12 @@ async def handle_echo(bot: Bot, event: MessageEvent):
 
 ```python
 from nonebot import on_command
-from nonebot.adapters.yunhu import Bot, MessageEvent, MessageSegment
+from nonebot.adapters.yunhu import Bot, Event, MessageSegment
 
 send_image = on_command("image")
 
 @send_image.handle()
-async def handle_send_image(bot: Bot, event: MessageEvent):
+async def handle_send_image(bot: Bot, event: Event):
     # 发送文本
     await bot.send(event, MessageSegment.text("Hello World"))
 
