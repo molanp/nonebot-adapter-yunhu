@@ -132,6 +132,8 @@ send_image = on_command("image")
 async def handle_send_image(bot: Bot, event: Event):
     # 发送文本
     await bot.send(event, MessageSegment.text("Hello World"))
+    # 有一种更简单的写法可以不用在上方写bot传参
+    # await send_image.send(MessageSegment.text("test"))
 
     # 发送图片（需要先上传图片获取 image_key）/ 也可以直接传参raw=bytes,适配器会自动上传
     await bot.send(event, MessageSegment.image("image_key"))
