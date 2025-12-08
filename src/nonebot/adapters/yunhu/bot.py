@@ -29,6 +29,7 @@ from .event import (
     InstructionMessageEvent,
     MessageEvent,
     PrivateMessageEvent,
+    NoticeEvent,
 )
 from .message import At, File, Image, Message, MessageSegment, Video
 
@@ -150,6 +151,13 @@ async def send(
             receive_type = "user"
         else:
             receive_id = event.event.message.chatId
+    elif isinstance(event, NoticeEvent):
+        receive_type = event.event.chatType
+        if receive_type == "bot":
+            receive_id = event.get_user_id()
+            receive_type = "user"
+        else:
+            receive_id = event.event.chatId
     else:
         raise ValueError("Cannot guess `receive_id` and `receive_type` to reply!")
 

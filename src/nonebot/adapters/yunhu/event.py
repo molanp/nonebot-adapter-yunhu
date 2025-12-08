@@ -190,7 +190,7 @@ class NoticeEvent(Event):
 
     @override
     def get_user_id(self) -> str:
-        raise ValueError("Event has no user_id!")
+        return self.event.userId
 
     @override
     def get_session_id(self) -> str:
