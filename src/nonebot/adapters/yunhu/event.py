@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 from typing_extensions import override
 
 from nonebot.adapters import Event as BaseEvent
-from nonebot.compat import model_dump
+from nonebot.compat import model_dump, model_validator
 from nonebot.utils import escape_tag
 
 
@@ -161,11 +161,13 @@ class PrivateMessageEvent(MessageEvent):
 
 class InstructionMessageEvent(MessageEvent):
     """机器人收不到用户对其他机器人的命令消息，不用担心误触发"""
+
     __event__ = "message.receive.instruction"
     to_me: bool = True
 
 
 class NoticeEvent(Event):
+    __event__ = "__notice__"
     event: Any
 
     @override
@@ -174,7 +176,7 @@ class NoticeEvent(Event):
 
     @override
     def get_event_name(self) -> str:
-        return self.header.eventType
+        return self.__event__
 
     @override
     def get_event_description(self) -> str:
@@ -190,7 +192,7 @@ class NoticeEvent(Event):
 
     @override
     def get_user_id(self) -> str:
-        return self.event.userId
+        return getattr(self.event, "userId", "")
 
     @override
     def get_session_id(self) -> str:
@@ -219,3 +221,14 @@ class BotUnfollowedNoticeEvent(NoticeEvent):
 
     __event__ = "bot.unfollowed"
     event: BotNoticeDetail
+
+
+class TipNoticeEvent(NoticeEvent):
+    __event__ = "group.tip"
+    event: str
+    """提示内容"""
+
+    @model_validator(mode="before")
+    def fill_tip_text(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["event"] = values["event"]["message"]["content"]["text"]
+        return values

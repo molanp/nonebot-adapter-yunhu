@@ -174,7 +174,7 @@ async def send(
             )
             + " "
         )
-        full_message = f"@{event.event.sender.senderNickname}\u200b" + full_message
+        full_message = f"@{event.event.sender.senderNickname}\u200b{full_message}"
     full_message += message
 
     content, msg_type = full_message.serialize()

@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 import re
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
@@ -299,25 +299,14 @@ class Message(BaseMessage[MessageSegment]):
     def deserialize(
         content: Content,
         at_list: Optional[list[str]],
-        message_type: Literal[
-            "text",
-            "image",
-            "markdown",
-            "file",
-            "video",
-            "html",
-            "expression",
-            "form",
-            "tip",
-            "audio",
-        ],
+        message_type: str,
         command_name: Optional[str] = None,
     ) -> "Message":
         command_name = f"{command_name} " if command_name else None
         msg = Message(command_name)
         parsed_content = content.to_dict()
 
-        if message_type in ["text", "markdown", "html"]:
+        if message_type in {"text", "markdown", "html"}:
             assert isinstance(content, Union[TextContent, MarkdownContent, HTMLContent])
             text = content.text
             text_begin = 0
@@ -366,7 +355,6 @@ class Message(BaseMessage[MessageSegment]):
             if matched := text[text_begin:]:
                 msg.append(Text("text", {"text": text[text_begin:]}))
 
-        # 处理其他消息类型
         elif seg_builder := getattr(MessageSegment, message_type, None):
             parsed_content.pop("at", None)
             msg.append(seg_builder(**parsed_content))
