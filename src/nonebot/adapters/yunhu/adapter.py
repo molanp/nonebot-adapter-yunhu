@@ -227,6 +227,8 @@ class Adapter(BaseAdapter):
             event_type = header.get("eventType", "")
             if json_data.get("event", {}).get("message"):
                 event_type += f".{json_data['event']['message']['chatType']}"
+                if json_data["event"]["message"]["contentType"] == "tip":
+                    event_type = "group.tip"
 
             models = cls.get_event_model(event_type)
             for model in models:

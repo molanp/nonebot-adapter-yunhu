@@ -74,17 +74,28 @@ class ImageContent(CommonContent):
     def to_dict(self) -> dict:
         return {"imageKey": self.imageName.split(".")[0]}
 
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_image_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(values, dict) and not values.get("imageUrl"):
+            if image_name := values.get("imageName"):
+                values["imageUrl"] = f"https://chat-img.jwznb.com/{image_name}"
+        return values
+
 
 class VideoContent(CommonContent):
     contentType: Literal["video"] = Field("video")
     videoUrl: str
-    """视频地址(需要拼接baseUrl)"""
+    """视频地址"""
     etag: str
     videoDuration: int
     """视频时长 (秒)"""
 
     def to_dict(self) -> dict:
         return {"videoKey": self.videoUrl.split(".")[0]}
+
+    def get_url(self) -> str:
+        return f"https://chat-video1.jwznb.com/{self.videoUrl}"
 
 
 class HTMLContent(CommonContent):
@@ -109,18 +120,6 @@ class FileContent(CommonContent):
 
     def to_dict(self) -> dict:
         return {"fileKey": self.fileName.split(".")[0]}
-
-
-class ExpressionContent(CommonContent):
-    contentType: Literal["expression"] = Field("expression")
-    imageName: str
-    """表情包路径"""
-    expressionId: int
-    """表情包ID"""
-    imageWidth: int
-    """表情包宽度"""
-    imageHeight: int
-    """表情包高度"""
 
 
 class FormDetail(BaseModel):
@@ -148,18 +147,12 @@ class FormContent(CommonContent):
     """表单数据"""
 
 
-class TipContent(CommonContent):
-    contentType: Literal["tip"] = Field("tip")
-    text: str
-    """提示信息"""
-
-
 class AudioContent(CommonContent):
     """音频数据，只收不发"""
 
     contentType: Literal["audio"] = Field("audio")
     audioUrl: str
-    """音频endpoint, 自己拼base_url"""
+    """音频endpoint, 自己拼base_url,(可能是https://chat-audio1.jwznb.com/)"""
     audioDuration: int
     """音频时长,单位秒"""
 
@@ -171,9 +164,7 @@ Content = Union[
     MarkdownContent,
     FileContent,
     VideoContent,
-    ExpressionContent,
     FormContent,
-    TipContent,
     AudioContent,
 ]
 
@@ -197,18 +188,7 @@ class EventMessage(BaseModel):
     """
     chatType: Literal["group", "bot"]
     """当前聊天的对象类型(group: 群聊, bot: 单聊)"""
-    contentType: Literal[
-        "text",
-        "image",
-        "markdown",
-        "file",
-        "video",
-        "html",
-        "expression",
-        "form",
-        "tip",
-        "audio",
-    ]
+    contentType: str
     """消息内容类型（可能不存在于 incoming content）"""
     # 使用 discriminator 让 pydantic 根据 content.contentType 选择子模型
     content: Content = Field(..., discriminator="contentType")
@@ -225,7 +205,6 @@ class EventMessage(BaseModel):
         优先使用外层 contentType；若不存在则根据 content 字段特征启发式推断。
         """
         content = values.get("content")
-        outer_ct = values.get("contentType")
         if not isinstance(content, dict):
             return values
 
@@ -234,33 +213,16 @@ class EventMessage(BaseModel):
             values.setdefault("contentType", content["contentType"])
             return values
 
-        # 优先使用外层 contentType 回填内层
-        if outer_ct:
-            content = {"contentType": outer_ct, **content}
-            values["content"] = content
-            return values
-
-        # 启发式推断
-        ct: Optional[str] = None
-        if "text" in content:
-            ct = "text"
-        elif "markdown" in content:
-            ct = "markdown"
-        elif "imageUrl" in content or "imageName" in content:
-            ct = "image"
-        elif "fileUrl" in content or "fileName" in content:
-            ct = "file"
-        elif "videoUrl" in content:
-            ct = "video"
-        elif "formJson" in content:
-            ct = "form"
-        elif "expressionId" in content:
-            ct = "expression"
-        # 回填
-        if ct:
-            content = {"contentType": ct, **content}
-            values["content"] = content
-            values.setdefault("contentType", ct)
+        # 如果有外层 contentType，则填充到 content 中
+        ct = values.get("contentType")
+        if ct is not None:
+            if ct == "expression":
+                content = {"contentType": "image", **content}
+                values["content"] = content
+                values["contentType"] = "image"
+            else:
+                content = {"contentType": ct, **content}
+                values["content"] = content
 
         return values
 
