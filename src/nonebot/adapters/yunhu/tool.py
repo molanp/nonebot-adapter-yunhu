@@ -1,7 +1,7 @@
 import re
 
 
-yunhu_emoji_map = {
+YUNHU_EMOJI_MAP = {
     "[.滑稽]": "🤪",
     "[.龇牙咧嘴]": "😬",
     "[.米饭]": "🍚",
@@ -116,6 +116,10 @@ yunhu_emoji_map = {
     "[.披萨]": "🍕",
 }
 
+# 预先计算表情 key 列表与匹配正则，避免在 decode_emoji 中重复构建
+# 按长度降序，防止短 key 优先匹配并截断长 key
+_EMOJI_KEYS = sorted(YUNHU_EMOJI_MAP.keys(), key=len, reverse=True)
+_EMOJI_PATTERN = re.compile("|".join(re.escape(k) for k in _EMOJI_KEYS))
 
 def decode_emoji(text: str) -> str:
     """
@@ -123,7 +127,7 @@ def decode_emoji(text: str) -> str:
     """
     if not text:
         return text
-    # 按长度降序，防止短 key 优先匹配并截断长 key
-    keys = sorted(yunhu_emoji_map.keys(), key=len, reverse=True)
-    pattern = re.compile("|".join(re.escape(k) for k in keys))
-    return pattern.sub(lambda m: yunhu_emoji_map.get(m.group(0), m.group(0)), text)
+    return _EMOJI_PATTERN.sub(
+        lambda m: YUNHU_EMOJI_MAP.get(m.group(0), m.group(0)),
+        text,
+    )
