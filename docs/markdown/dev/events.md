@@ -57,3 +57,15 @@ async def _(event: GroupMessageEvent): # 仅群消息会触发
 | `group.join`             | `group.join`           | `GroupJoinNoticeEvent`     | 新成员加入群组             |
 | `group.leave`            | `group.leave`          | `GroupLeaveNoticeEvent`    | 成员退出群组               |
 | `button.report.inline`   | `button.report.inline` | `ButtonReportNoticeEvent`  | 用户点击了消息中的内联按钮 |
+
+## 关于指令消息
+
+指令消息会自动拼接可能的参数
+
+例如
+
+1. 后台配置指令消息为 `每日发癫`
+2. 客户端显示为 `/每日发癫`
+3. 用户选中指令并输入参数 `Feng`
+4. 后台收到消息为 `每日发癫 Feng`
+5. 实际效果与用户直接发送 `每日发癫 Feng` 相同，指令消息只是让用户不用打指令了
