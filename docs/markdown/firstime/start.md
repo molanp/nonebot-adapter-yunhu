@@ -79,11 +79,11 @@ nb create
 
 ![Nonebot配置项](/assets/QQ20251216-124633.png)
 
-
 ::: warning
 如果你是手动安装的适配器，请打开`bot.py`文件，导入并激活适配器
 
-标准配置文件
+标准`bot.py`文件
+
 ```python
 import nonebot
 
@@ -101,8 +101,8 @@ nonebot.load_plugins("plugins") # 加载 plugins 文件夹下的插件
 
 nonebot.run()
 ```
-:::
----
+
+## :::
 
 ## 5. 确认订阅地址
 
