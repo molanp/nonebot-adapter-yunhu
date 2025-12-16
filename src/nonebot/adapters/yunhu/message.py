@@ -16,6 +16,7 @@ from .models.common import (
     MarkdownContent,
     TextContent,
 )
+from .tool import decode_emoji
 
 
 class MessageSegment(BaseMessageSegment["Message"]):
@@ -322,7 +323,7 @@ class Message(BaseMessage[MessageSegment]):
                 text,
             ):
                 if matched := text[text_begin : embed.start()]:
-                    msg.extend(Message(Text("text", {"text": matched})))
+                    msg.extend(Message(Text("text", {"text": decode_emoji(matched)})))
 
                 text_begin = embed.end()
 
@@ -353,7 +354,7 @@ class Message(BaseMessage[MessageSegment]):
                     )
 
             if matched := text[text_begin:]:
-                msg.append(Text("text", {"text": text[text_begin:]}))
+                msg.append(Text("text", {"text": decode_emoji(text[text_begin:])}))
 
         elif seg_builder := getattr(MessageSegment, message_type, None):
             parsed_content.pop("at", None)

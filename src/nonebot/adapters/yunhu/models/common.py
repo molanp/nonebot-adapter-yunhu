@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Literal, Optional, TypedDict, Union, Dict, Any
 from pydantic import BaseModel, Field
-from nonebot.compat import model_validator, model_dump
+from nonebot.compat import model_validator, model_dump, field_validator
 
 
 class EventHeader(BaseModel):
