@@ -333,6 +333,42 @@ async def send_msg(
 
 - `SendMsgResponse`
 
+### _method_ send
+
+::: tip
+这里是调用`matcher.send()`时，内部实际调用的方法。`await bot.send(event, ..)`与`await matcher.send(..)`
+实际作用相同，不过一般为了省事不导入`event`对象和便于管理，都使用`await matcher.send(..)`
+:::
+
+根据 `event` 向触发事件的主体回复消息。
+
+```python
+@override
+async def send(  # pyright: ignore[reportIncompatibleMethodOverride]
+    self,
+    event: Event,
+    message: Union[str, Message, MessageSegment],
+    **kwargs: Any,
+) -> Any:
+```
+
+#### 参数
+
+- `event`: Event 对象
+- `message`: 要发送的消息
+- `at_sender`: 是否 @ 事件主体
+- `kwargs`: 其他参数
+
+#### 返回
+
+API 调用返回数据
+
+#### 异常
+
+- `ValueError`: 缺少 `user_id`, `group_id`
+- `NetworkError`: 网络错误
+- `ActionFailed`: API 调用失败
+
 ### _method_ post_file
 
 ::: warning
