@@ -135,7 +135,7 @@ async def send(
     message: Union[str, Message, MessageSegment],
     at_sender: bool = False,
     reply_to: bool = False,
-) -> Any:
+) -> Any:  # sourcery skip: use-fstring-for-concatenation
     """默认回复消息处理函数。"""
 
     message = message if isinstance(message, Message) else Message(message)
@@ -437,7 +437,7 @@ class Bot(BaseBot):
 
     async def set_group_board(
         self,
-        content: BaseTextContent,
+        content: str,
         content_type: BASE_TEXT_TYPE,
         group_id: str,
         memberId: Optional[str] = None,
@@ -490,7 +490,7 @@ class Bot(BaseBot):
 
     async def set_user_board(
         self,
-        content: BaseTextContent,
+        content: str,
         content_type: BASE_TEXT_TYPE,
         user_id: str,
         expire_time: int = 0,
@@ -537,7 +537,7 @@ class Bot(BaseBot):
 
     async def set_all_board(
         self,
-        content: BaseTextContent,
+        content: str,
         content_type: BASE_TEXT_TYPE,
         expire_time: int = 0,
     ):
