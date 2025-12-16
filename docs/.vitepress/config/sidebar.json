@@ -1,0 +1,65 @@
+[
+    {
+        "text": "开始",
+        "items": [
+            {
+                "text": "项目介绍",
+                "link": "/"
+            },
+            {
+                "text": "接入指南",
+                "link": "/markdown/firstime/start"
+            }
+        ]
+    },
+    {
+        "text": "使用指南",
+        "items": [
+            {
+                "text": "配置项说明",
+                "link": "/markdown/start/config"
+            },
+            {
+                "text": "错误码",
+                "link": "/markdown/start/errorcodes"
+            },
+            {
+                "text": "常见问题",
+                "link": "/markdown/start/issues"
+            }
+        ]
+    },
+    {
+        "text": "适配器文档",
+        "items": [
+            {
+                "text": "事件",
+                "link": "/markdown/dev/events"
+            },
+            {
+                "text": "接口",
+                "link": "/markdown/dev/apis"
+            }
+        ]
+    },
+    {
+        "text": "链接",
+        "items": [
+            {
+                "text": "GitHub 仓库",
+                "link": "https://github.com/molanp/nonebot-adapter-yunhu/",
+                "target": "_blank"
+            },
+            {
+                "text": "LICENSE",
+                "link": "https://github.com/molanp/nonebot-adapter-yunhu/blob/main/LICENSE",
+                "target": "_blank"
+            },
+            {
+                "text": "Nonebot 官网",
+                "link": "https://nonebot.dev/",
+                "target": "_blank"
+            }
+        ]
+    }
+]

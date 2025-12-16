@@ -1,0 +1,45 @@
+{
+    "title": "Nonebot Adapter Yunhu",
+    "description": "Nonebot 云湖 适配器插件文档",
+    "ignoreDeadLinks": true,
+    "base": "/",
+    "head": [
+        [
+            "link",
+            {
+                "rel": "icon",
+                "href": "https://www.yhchat.com/favicon.ico"
+            }
+        ],
+        [
+            "meta",
+            {
+                "name": "theme-color",
+                "content": "#39c5bb"
+            }
+        ]
+    ],
+    "themeConfig": {
+        "socialLinks": {
+            "github": "https://github.com/molanp/nonebot-adapter-yunhu"
+        },
+        "lastUpdated": {
+            "text": "上次更新"
+        },
+        "editLink": {
+            "pattern": "https://github.com/molanp/nonebot-adapter-yunhu/edit/docs/docs/:path",
+            "text": "在 GitHub 上编辑此页"
+        },
+        "logo": "https://www.yhchat.com/favicon.ico",
+        "nav": [
+            {
+                "text": "教程",
+                "link": "/markdown/firstime/start"
+            },
+            {
+                "text": "接口",
+                "link": "/markdown/dev/apis"
+            }
+        ]
+    }
+}
