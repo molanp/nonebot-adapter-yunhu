@@ -296,7 +296,7 @@ class ButtonActionType(Enum):
     COPY = 2
     """复制"""
     REPORT = 3
-    """点击汇报"""
+    """点击汇报(汇报value内容)"""
 
 
 class ButtonBody(BaseModel):
@@ -310,6 +310,57 @@ class ButtonBody(BaseModel):
     """跳转URL,当actionType为1时使用"""
     value: Optional[str] = None
     """当actionType为2时，该值会复制到剪贴板"""
+
+
+class ButtonReportNoticeDetail(BaseModel):
+    """按钮汇报事件"""
+
+    time: int
+    """触发事件时间戳,毫秒13位时间戳"""
+    msgId: str
+    """消息ID"""
+    recvId: str
+    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
+    recvType: Literal["group", "user"]
+    """触发事件的对象类型"""
+    userId: str
+    """触发事件用户ID"""
+    value: str
+    """被点击的按钮的value值"""
+
+
+class TipNoticeContent(BaseModel):
+    """群提示消息内容"""
+
+    text: str
+    """提示内容"""
+
+
+class TipNoticeBody(BaseModel):
+    """群提示消息体"""
+
+    msgId: str
+    """消息ID"""
+    sendTime: int
+    """提示时间时间戳,毫秒13位时间戳"""
+    chatId: str
+    """群ID"""
+    chatType: Literal["group"]
+    """事件对象类型"""
+    contentType: Literal["tip"]
+    """消息内容类型"""
+    content: TipNoticeContent
+    """群提示消息体"""
+
+
+class TipNoticeDetail(BaseModel):
+    """群提示事件"""
+
+    sender: Sender
+    """发送者信息"""
+    chat: Chat
+    """事件对象信息"""
+    message: TipNoticeBody
 
 
 class BaseTextContent(TypedDict, total=False):

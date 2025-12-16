@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 from typing_extensions import override
 
 from nonebot.adapters import Event as BaseEvent
-from nonebot.compat import model_dump, model_validator
+from nonebot.compat import model_dump
 from nonebot.utils import escape_tag
 
 
@@ -15,6 +15,8 @@ from .models import (
     Reply,
     GroupNoticeDetail,
     BotNoticeDetail,
+    ButtonReportNoticeDetail,
+    TipNoticeDetail
 )
 
 
@@ -180,7 +182,7 @@ class NoticeEvent(Event):
 
     @override
     def get_event_description(self) -> str:
-        return escape_tag(str(model_dump(self)))
+        return escape_tag(str(model_dump(self.event)))
 
     @override
     def get_message(self) -> Message:
@@ -225,10 +227,9 @@ class BotUnfollowedNoticeEvent(NoticeEvent):
 
 class TipNoticeEvent(NoticeEvent):
     __event__ = "group.tip"
-    event: str
-    """提示内容"""
+    event: TipNoticeDetail
 
-    @model_validator(mode="before")
-    def fill_tip_text(cls, values: dict[str, Any]) -> dict[str, Any]:
-        values["event"] = values["event"]["message"]["content"]["text"]
-        return values
+
+class ButtonReportNoticeEvent(NoticeEvent):
+    __event__ = "button.report.inline"
+    event: ButtonReportNoticeDetail

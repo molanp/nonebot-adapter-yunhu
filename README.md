@@ -18,7 +18,7 @@ _✨ YunHu adapter for NoneBot2 ✨_
 ### 事件支持情况
 
 - [x] 基础消息事件
-- [ ] 按钮事件上报接收
+- [x] 按钮事件上报接收
 - [ ] 机器人设置事件
 - [x] 按钮发送
 - [ ] 表单发送
@@ -30,7 +30,7 @@ _✨ YunHu adapter for NoneBot2 ✨_
 | 文本 Text         | ✅       |
 | 图片 Image        | ✅       |
 | 提及用户 At(user) | ✅       |
-| 按钮 Buttons      | ⬆️       |
+| 按钮 Buttons      | ✅       |
 | 表单 Form         | ❌       |
 | 表情包 expression | ⬇️       |
 | 语音 Audio        | ⬇️       |
@@ -63,6 +63,12 @@ _✨ YunHu adapter for NoneBot2 ✨_
 pip install nonebot-adapter-yunhu
 ```
 
+### 使用 nb-cli 安装
+
+```bash
+nb install nonebot-adapter-yunhu
+```
+
 ### 使用 poetry 安装
 
 ```bash
@@ -73,7 +79,7 @@ poetry add nonebot-adapter-yunhu
 
 在您的 NoneBot 项目配置文件 `.env` 中添加以下配置：
 
-> `app_id` 是Bot的ID，可在bot信息页面查看
+> `app_id` 是 Bot 的 ID，可在 bot 信息页面查看
 
 ```env
 DRIVER=~fastapi+~httpx
