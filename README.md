@@ -66,7 +66,7 @@ pip install nonebot-adapter-yunhu
 ### 使用 nb-cli 安装
 
 ```bash
-nb install nonebot-adapter-yunhu
+nb adapter install nonebot-adapter-yunhu
 ```
 
 ### 使用 poetry 安装
