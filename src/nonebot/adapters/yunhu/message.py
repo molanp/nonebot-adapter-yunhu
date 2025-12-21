@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 import re
-from typing import TYPE_CHECKING, Any, Optional, Type, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
@@ -16,7 +16,6 @@ from .models.common import (
     MarkdownContent,
     TextContent,
 )
-from .tool import decode_emoji
 
 
 class MessageSegment(BaseMessageSegment["Message"]):
@@ -55,25 +54,27 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @staticmethod
     def text(text: str) -> "Text":
-        return Text("text", {"text": decode_emoji(text)})
+        return Text("text", {"text": text})
 
     @staticmethod
     def at(user_id: str, name: Optional[str] = None):
         return At("at", {"user_id": user_id, "name": name})
 
     @staticmethod
-    def image(imageKey: Optional[str] = None, raw: Optional[bytes] = None) -> "Image":
+    def image(
+        imageKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
+    ) -> "Image":
         return Image("image", {"imageKey": imageKey, "_raw": raw})
 
     @staticmethod
     def video(
-        videoKey: Optional[str] = None, raw: Optional[bytes] = None
+        videoKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
     ) -> "MessageSegment":
         return Video("video", {"videoKey": videoKey, "_raw": raw})
 
     @staticmethod
     def file(
-        fileKey: Optional[str] = None, raw: Optional[bytes] = None
+        fileKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
     ) -> "MessageSegment":
         return File("file", {"fileKey": fileKey, "_raw": raw})
 
@@ -94,9 +95,14 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Buttons("button", {"buttons": buttons})
 
     @staticmethod
-    def audio(audioUrl: str, audioDuration: int):
+    def audio(audioUrl: str, audioDuration: int, **kwargs):
         """语音消息，只收不发"""
         return Audio("audio", {"audioUrl": audioUrl, "audioDuration": audioDuration})
+
+    @staticmethod
+    def face(code: str, emoji: str) -> "MessageSegment":
+        """表情"""
+        return Face("face", {"code": code, "emoji": emoji})
 
 
 class _TextData(TypedDict):
@@ -222,6 +228,21 @@ class Audio(MessageSegment):
         return f"[audio:{self.data['audioUrl']}]"
 
 
+class _FaceData(TypedDict):
+    code: str
+    emoji: str
+
+
+@dataclass
+class Face(MessageSegment):
+    if TYPE_CHECKING:
+        data: _FaceData  # type: ignore
+
+    @override
+    def __str__(self) -> str:
+        return f"[face:code={self.data['code']}]"
+
+
 class Message(BaseMessage[MessageSegment]):
     """
     云湖 协议 Message 适配。
@@ -254,7 +275,10 @@ class Message(BaseMessage[MessageSegment]):
         yield Text("text", {"text": msg})
 
     def serialize(self) -> tuple[dict[str, Any], str]:
-        result = {"at": []}
+        """
+        序列化消息为协议内容
+        """
+        result: dict[str, Any] = {"at": []}
         if "audio" in self:
             logger.warning("Sending audio is not supported")
             self.exclude("audio")
@@ -265,36 +289,53 @@ class Message(BaseMessage[MessageSegment]):
                 model_dump(b) for button in buttons.data["buttons"] for b in button
             ]
 
-        if len(self) >= 2:
-            _type = "text"
-            prev_type: Optional[str] = None
+        if not self:
+            raise ValueError("Empty message")
 
+        # 只处理文本相关（text/markdown/html）和 Face 段
+        if all(seg.is_text() or isinstance(seg, (At, Face)) for seg in self):
+            text_buffer = ""
             for seg in self:
                 if isinstance(seg, At):
                     result["at"].append(seg.data["user_id"])
-                    continue
+                elif isinstance(seg, Face):
+                    text_buffer += f"[.{seg.data['code']}]\u200b"
+                elif seg.is_text():
+                    text_buffer += seg.data["text"]
+            if text_buffer:
+                result["text"] = text_buffer
+                return result, "text"
+            # 只有@，无文本
+            return result, "text"
 
-                # 合并相邻且同类型的文本段（text/markdown/html）
-                if seg.is_text():
-                    if prev_type == seg.type and "text" in result:
-                        result["text"] = result["text"] + seg.data["text"]
-                    else:
-                        result["text"] = seg.data["text"]
+        # 处理单段消息
+        if len(self) == 1:
+            seg = self[0]
+            if isinstance(seg, At):
+                return ({"at": [seg.data["user_id"]]}, "text")
+            elif isinstance(seg, Face):
+                return ({"text": f"[.{seg.data['code']}]\u200b"}, "text")
+            else:
+                return seg.data, seg.type
+
+        # 处理混合类型（如图片、文件等）
+        _type = None
+        prev_type: Optional[str] = None
+        for seg in self:
+            if isinstance(seg, At):
+                result["at"].append(seg.data["user_id"])
+            elif seg.is_text():
+                if prev_type == seg.type and "text" in result:
+                    result["text"] = result["text"] + seg.data["text"]
                 else:
-                    # 其他类型保留现有行为（后者字段会覆盖同名字段）
-                    result |= seg.data
-
+                    result["text"] = seg.data["text"]
                 prev_type = seg.type
                 _type = seg.type
-
-            return result, _type
-
-        elif len(self) == 1:
-            return (
-                {"at": [self.data["user_id"]]} if isinstance(self, At) else self[0].data
-            ), ("text" if isinstance(self, At) else self[0].type)
-        else:
-            raise ValueError("Empty message")
+            else:
+                result |= seg.data
+                prev_type = seg.type
+                _type = seg.type
+        return result, _type or "text"
 
     @staticmethod
     def deserialize(
@@ -305,28 +346,46 @@ class Message(BaseMessage[MessageSegment]):
     ) -> "Message":
         msg = Message(f"{command_name} ") if command_name else Message()
         parsed_content = content.to_dict()
+        from .tool import YUNHU_EMOJI_MAP, _EMOJI_PATTERN
 
-        def process_text_segments(text: str, segment_class: Type[MessageSegment]):
-            """
-            解析消息文本
+        def _split_face_segments(segment: str) -> list[MessageSegment]:
+            """将文本分割为 Text/Face 段列表"""
+            segments: list[MessageSegment] = []
+            last_end = 0
+            for match in _EMOJI_PATTERN.finditer(segment):
+                if match.start() > last_end:
+                    normal_text = segment[last_end : match.start()]
+                    if normal_text:
+                        segments.append(Text("text", {"text": normal_text}))
+                emoji_code = match.group(0)
+                clean_code = emoji_code.lstrip("[").rstrip("]").lstrip(".")
+                emoji_value = YUNHU_EMOJI_MAP.get(emoji_code)
+                if emoji_value:
+                    segments.append(
+                        Face("face", {"code": clean_code, "emoji": emoji_value})
+                    )
+                last_end = match.end()
+            if last_end < len(segment):
+                normal_text = segment[last_end:]
+                if normal_text:
+                    segments.append(Text("text", {"text": normal_text}))
+            return segments
 
-            :param text: 消息文本
-            :param segment_class: 消息段类
-            """
-            text_begin = 0
+        def parse_text(text: str, with_face: bool = False):
+            # 优化性能：只正则一次，分割@和普通文本
+            at_pattern = re.compile(r"@(?P<name>[^@\u200b\s]+)\s*\u200b")
             at_name_mapping = {}
             at_index = 0
-            for embed in re.finditer(r"@(?P<name>[^@\u200b\s]+)\s*\u200b", text):
-                if matched := text[text_begin : embed.start()]:
-                    segment_text = matched
-                    msg.extend(
-                        Message(
-                            segment_class(
-                                segment_class.__name__.lower(), {"text": segment_text}
-                            )
-                        )
-                    )
-                text_begin = embed.end()
+            pos = 0
+            for embed in at_pattern.finditer(text):
+                # 处理@前的文本
+                segment = text[pos : embed.start()]
+                if segment:
+                    if with_face:
+                        msg.extend(Message(_split_face_segments(segment)))
+                    else:
+                        msg.append(Text("text", {"text": segment}))
+                # 处理@本身
                 user_name = embed.group("name")
                 if user_name in at_name_mapping:
                     actual_user_id = at_name_mapping[user_name]
@@ -337,32 +396,32 @@ class Message(BaseMessage[MessageSegment]):
                         at_name_mapping[user_name] = actual_user_id
                         at_index += 1
                 if actual_user_id:
-                    msg.extend(
-                        Message(
-                            At("at", {"user_id": actual_user_id, "name": user_name})
-                        )
-                    )
-            if matched := text[text_begin:]:
-                segment_text = matched
-                msg.append(
-                    segment_class(
-                        segment_class.__name__.lower(), {"text": segment_text}
-                    )
-                )
+                    msg.append(At("at", {"user_id": actual_user_id, "name": user_name}))
+                pos = embed.end()
+            # 处理最后一段文本
+            segment = text[pos:]
+            if segment:
+                if with_face:
+                    msg.extend(Message(_split_face_segments(segment)))
+                else:
+                    msg.append(Text("text", {"text": segment}))
 
         match message_type:
             case "text":
                 assert isinstance(content, TextContent)
-                process_text_segments(content.text, Text)
+                parse_text(content.text, with_face=True)
             case "markdown":
                 assert isinstance(content, MarkdownContent)
-                process_text_segments(content.text, Markdown)
+                parse_text(content.text)
             case "html":
                 assert isinstance(content, HTMLContent)
-                process_text_segments(content.text, Html)
+                parse_text(content.text)
             case _:
                 parsed_content.pop("at", None)
-                msg.append(MessageSegment(message_type, parsed_content))
+                if seg_builder := getattr(MessageSegment, message_type, None):
+                    msg.append(seg_builder(**parsed_content))
+                else:
+                    msg.append(MessageSegment(message_type, parsed_content))
         return msg
 
     @override

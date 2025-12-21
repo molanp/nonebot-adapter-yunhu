@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, Optional, TypedDict, Union, Dict, Any
+from typing import Literal, NotRequired, Optional, TypedDict, Union, Dict, Any
 from pydantic import BaseModel, Field
 from nonebot.compat import model_validator, model_dump
 
@@ -70,16 +70,17 @@ class ImageContent(CommonContent):
     """图片宽度 (像素)"""
     imageHeight: int
     """图片高度 (像素)"""
-
-    def to_dict(self) -> dict:
-        return {"imageKey": self.imageName.split(".")[0]}
+    imageKey: str
 
     @model_validator(mode="before")
     @classmethod
     def _fill_image_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if isinstance(values, dict) and not values.get("imageUrl"):
+        if isinstance(values, dict) and "imageUrl" not in values:
             if image_name := values.get("imageName"):
                 values["imageUrl"] = f"https://chat-img.jwznb.com/{image_name}"
+        if isinstance(values, dict) and "imageKey" not in values:
+            if image_name := values.get("imageName"):
+                values["imageKey"] = values["imageName"].split(".")[0]
         return values
 
 
@@ -363,12 +364,12 @@ class TipNoticeDetail(BaseModel):
     message: TipNoticeBody
 
 
-class BaseTextContent(TypedDict, total=False):
+class BaseTextContent(TypedDict):
     """基础文本消息内容"""
 
     text: str
     """文本内容"""
-    at: Optional[list[str]]
+    at: NotRequired[list[str]]
     """提及用户id列表"""
 
 

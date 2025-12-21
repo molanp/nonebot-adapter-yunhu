@@ -102,7 +102,7 @@ class MessageEvent(Event):
         return (
             f"Message {self.event.message.msgId} from {self.get_user_id()}"
             f"@[{self.event.message.chatType}:{self.event.message.chatId}]"
-            f" {escape_tag(str(self.get_message()))}"
+            f" '{escape_tag(str(self.get_message()))}'"
         )
 
     @override
