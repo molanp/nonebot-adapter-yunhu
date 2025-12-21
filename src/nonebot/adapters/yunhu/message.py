@@ -348,6 +348,29 @@ class Message(BaseMessage[MessageSegment]):
         parsed_content = content.to_dict()
         from .tool import YUNHU_EMOJI_MAP, _EMOJI_PATTERN
 
+        def _split_face_segments(segment: str) -> list[MessageSegment]:
+            """将文本分割为 Text/Face 段列表"""
+            segments: list[MessageSegment] = []
+            last_end = 0
+            for match in _EMOJI_PATTERN.finditer(segment):
+                if match.start() > last_end:
+                    normal_text = segment[last_end : match.start()]
+                    if normal_text:
+                        segments.append(Text("text", {"text": normal_text}))
+                emoji_code = match.group(0)
+                clean_code = emoji_code.lstrip("[").rstrip("]").lstrip(".")
+                emoji_value = YUNHU_EMOJI_MAP.get(emoji_code)
+                if emoji_value:
+                    segments.append(
+                        Face("face", {"code": clean_code, "emoji": emoji_value})
+                    )
+                last_end = match.end()
+            if last_end < len(segment):
+                normal_text = segment[last_end:]
+                if normal_text:
+                    segments.append(Text("text", {"text": normal_text}))
+            return segments
+
         def parse_text(text: str, with_face: bool = False):
             # 优化性能：只正则一次，分割@和普通文本
             at_pattern = re.compile(r"@(?P<name>[^@\u200b\s]+)\s*\u200b")
@@ -359,32 +382,9 @@ class Message(BaseMessage[MessageSegment]):
                 segment = text[pos : embed.start()]
                 if segment:
                     if with_face:
-                        # 只在text类型下处理表情
-                        last_end = 0
-                        for match in _EMOJI_PATTERN.finditer(segment):
-                            if match.start() > last_end:
-                                normal_text = segment[last_end : match.start()]
-                                if normal_text:
-                                    msg.extend(
-                                        Message(Text("text", {"text": normal_text}))
-                                    )
-                            emoji_code = match.group(0)
-                            clean_code = emoji_code.lstrip("[").rstrip("]").lstrip(".")
-                            emoji_value = YUNHU_EMOJI_MAP.get(emoji_code)
-                            if emoji_value:
-                                msg.append(
-                                    Face(
-                                        "face",
-                                        {"code": clean_code, "emoji": emoji_value},
-                                    )
-                                )
-                            last_end = match.end()
-                        if last_end < len(segment):
-                            normal_text = segment[last_end:]
-                            if normal_text:
-                                msg.extend(Message(Text("text", {"text": normal_text})))
+                        msg.extend(Message(_split_face_segments(segment)))
                     else:
-                        msg.extend(Message(Text("text", {"text": segment})))
+                        msg.append(Text("text", {"text": segment}))
                 # 处理@本身
                 user_name = embed.group("name")
                 if user_name in at_name_mapping:
@@ -396,34 +396,13 @@ class Message(BaseMessage[MessageSegment]):
                         at_name_mapping[user_name] = actual_user_id
                         at_index += 1
                 if actual_user_id:
-                    msg.extend(
-                        Message(
-                            At("at", {"user_id": actual_user_id, "name": user_name})
-                        )
-                    )
+                    msg.append(At("at", {"user_id": actual_user_id, "name": user_name}))
                 pos = embed.end()
             # 处理最后一段文本
             segment = text[pos:]
             if segment:
                 if with_face:
-                    last_end = 0
-                    for match in _EMOJI_PATTERN.finditer(segment):
-                        if match.start() > last_end:
-                            normal_text = segment[last_end : match.start()]
-                            if normal_text:
-                                msg.extend(Message(Text("text", {"text": normal_text})))
-                        emoji_code = match.group(0)
-                        clean_code = emoji_code.lstrip("[").rstrip("]").lstrip(".")
-                        emoji_value = YUNHU_EMOJI_MAP.get(emoji_code)
-                        if emoji_value:
-                            msg.append(
-                                Face("face", {"code": clean_code, "emoji": emoji_value})
-                            )
-                        last_end = match.end()
-                    if last_end < len(segment):
-                        normal_text = segment[last_end:]
-                        if normal_text:
-                            msg.extend(Message(Text("text", {"text": normal_text})))
+                    msg.extend(Message(_split_face_segments(segment)))
                 else:
                     msg.append(Text("text", {"text": segment}))
 
