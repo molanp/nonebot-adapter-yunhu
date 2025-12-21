@@ -121,6 +121,7 @@ YUNHU_EMOJI_MAP = {
 _EMOJI_KEYS = sorted(YUNHU_EMOJI_MAP.keys(), key=len, reverse=True)
 _EMOJI_PATTERN = re.compile("|".join(re.escape(k) for k in _EMOJI_KEYS))
 
+
 def decode_emoji(text: str) -> str:
     """
     将文本中所有 yunhu 表情替换为对应的 emoji

@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 import re
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, Type, TypedDict, Union
 from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
@@ -55,7 +55,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @staticmethod
     def text(text: str) -> "Text":
-        return Text("text", {"text": text})
+        return Text("text", {"text": decode_emoji(text)})
 
     @staticmethod
     def at(user_id: str, name: Optional[str] = None):
@@ -303,66 +303,66 @@ class Message(BaseMessage[MessageSegment]):
         message_type: str,
         command_name: Optional[str] = None,
     ) -> "Message":
-        command_name = f"{command_name} " if command_name else None
-        msg = Message(command_name)
+        msg = Message(f"{command_name} ") if command_name else Message()
         parsed_content = content.to_dict()
 
-        if message_type in {"text", "markdown", "html"}:
-            assert isinstance(content, Union[TextContent, MarkdownContent, HTMLContent])
-            text = content.text
+        def process_text_segments(text: str, segment_class: Type[MessageSegment]):
+            """
+            解析消息文本
+
+            :param text: 消息文本
+            :param segment_class: 消息段类
+            """
             text_begin = 0
-
-            # 记录已经处理过的用户名及其在at_list中的对应ID
             at_name_mapping = {}
-            # at_list的索引
             at_index = 0
-
-            # 匹配格式: @用户名 \u200b
-            for embed in re.finditer(
-                r"@(?P<name>[^@\u200b\s]+)\s*\u200b",
-                text,
-            ):
+            for embed in re.finditer(r"@(?P<name>[^@\u200b\s]+)\s*\u200b", text):
                 if matched := text[text_begin : embed.start()]:
-                    msg.extend(Message(Text("text", {"text": decode_emoji(matched)})))
-
+                    segment_text = matched
+                    msg.extend(
+                        Message(
+                            segment_class(
+                                segment_class.__name__.lower(), {"text": segment_text}
+                            )
+                        )
+                    )
                 text_begin = embed.end()
-
-                # 获取@用户名
                 user_name = embed.group("name")
-
-                # 如果这个用户名已经映射过，使用之前记录的用户ID
-                # 否则从at_list中获取下一个用户ID
                 if user_name in at_name_mapping:
                     actual_user_id = at_name_mapping[user_name]
                 else:
                     actual_user_id = ""
                     if at_list and at_index < len(at_list):
                         actual_user_id = at_list[at_index]
-                        at_name_mapping[user_name] = (
-                            actual_user_id  # 记录这个用户名对应的at_list中的ID
-                        )
+                        at_name_mapping[user_name] = actual_user_id
                         at_index += 1
                 if actual_user_id:
-                    """忽略假at"""
                     msg.extend(
                         Message(
-                            At(
-                                "at",
-                                {"user_id": actual_user_id, "name": user_name},
-                            )
+                            At("at", {"user_id": actual_user_id, "name": user_name})
                         )
                     )
-
             if matched := text[text_begin:]:
-                msg.append(Text("text", {"text": decode_emoji(text[text_begin:])}))
+                segment_text = matched
+                msg.append(
+                    segment_class(
+                        segment_class.__name__.lower(), {"text": segment_text}
+                    )
+                )
 
-        elif seg_builder := getattr(MessageSegment, message_type, None):
-            parsed_content.pop("at", None)
-            msg.append(seg_builder(**parsed_content))
-        else:
-            parsed_content.pop("at", None)
-            msg.append(MessageSegment(message_type, parsed_content))
-
+        match message_type:
+            case "text":
+                assert isinstance(content, TextContent)
+                process_text_segments(content.text, Text)
+            case "markdown":
+                assert isinstance(content, MarkdownContent)
+                process_text_segments(content.text, Markdown)
+            case "html":
+                assert isinstance(content, HTMLContent)
+                process_text_segments(content.text, Html)
+            case _:
+                parsed_content.pop("at", None)
+                msg.append(MessageSegment(message_type, parsed_content))
         return msg
 
     @override
