@@ -120,15 +120,3 @@ YUNHU_EMOJI_MAP = {
 # 按长度降序，防止短 key 优先匹配并截断长 key
 _EMOJI_KEYS = sorted(YUNHU_EMOJI_MAP.keys(), key=len, reverse=True)
 _EMOJI_PATTERN = re.compile("|".join(re.escape(k) for k in _EMOJI_KEYS))
-
-
-def decode_emoji(text: str) -> str:
-    """
-    将文本中所有 yunhu 表情替换为对应的 emoji
-    """
-    if not text:
-        return text
-    return _EMOJI_PATTERN.sub(
-        lambda m: YUNHU_EMOJI_MAP.get(m.group(0), m.group(0)),
-        text,
-    )
