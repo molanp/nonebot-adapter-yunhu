@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import Literal, NotRequired, Optional, TypedDict, Union, Dict, Any
+from typing import Literal, NotRequired, Optional, TypedDict, Union, Any
 from pydantic import BaseModel, Field
 from nonebot.compat import model_validator, model_dump
 
@@ -74,7 +73,7 @@ class ImageContent(CommonContent):
 
     @model_validator(mode="before")
     @classmethod
-    def _fill_image_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _fill_image_url(cls, values: dict[str, Any]) -> dict[str, Any]:
         if isinstance(values, dict) and "imageUrl" not in values:
             if image_name := values.get("imageName"):
                 values["imageUrl"] = f"https://chat-img.jwznb.com/{image_name}"
@@ -144,7 +143,7 @@ class FormDetail(BaseModel):
 
 class FormContent(CommonContent):
     contentType: Literal["form"] = Field("form")
-    formJson: Dict[str, FormDetail]
+    formJson: dict[str, FormDetail]
     """表单数据"""
 
 
@@ -200,7 +199,7 @@ class EventMessage(BaseModel):
     """指令名称, 可用来区分用户发送的指令"""
 
     @model_validator(mode="before")
-    def _fill_content_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _fill_content_type(cls, values: dict[str, Any]) -> dict[str, Any]:
         """
         在解析前确保 content 内包含 contentType（discriminator 需要）。
         优先使用外层 contentType；若不存在则根据 content 字段特征启发式推断。
@@ -289,27 +288,24 @@ class BotNoticeDetail(BaseModel):
     """触发事件用户头像URL"""
 
 
-class ButtonActionType(Enum):
-    """按钮动作类型"""
-
-    JUMP = 1
-    """跳转URL"""
-    COPY = 2
-    """复制"""
-    REPORT = 3
-    """点击汇报(汇报value内容)"""
+ButtonActionType = Literal[1, 2, 3]
+"""按钮动作类型
+- 1 = 跳转URL
+- 2 = 复制
+- 3 = 汇报 value 内容
+"""
 
 
-class ButtonBody(BaseModel):
+class ButtonBody(TypedDict):
     """按钮消息体"""
 
     text: str
     """按钮上的文字"""
     actionType: ButtonActionType
-    """按钮动作类型"""
-    url: Optional[str] = None
+    """按钮动作类型：1=跳转URL，2=复制，3=汇报"""
+    url: NotRequired[str]
     """跳转URL,当actionType为1时使用"""
-    value: Optional[str] = None
+    value: NotRequired[str]
     """当actionType为2时，该值会复制到剪贴板"""
 
 
