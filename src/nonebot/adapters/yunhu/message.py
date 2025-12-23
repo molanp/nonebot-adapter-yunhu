@@ -57,7 +57,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Text("text", {"text": text})
 
     @staticmethod
-    def at(user_id: str, name: Optional[str] = None):
+    def at(user_id: str, name: Optional[str] = None) -> "At":
         return At("at", {"user_id": user_id, "name": name})
 
     @staticmethod
@@ -69,13 +69,13 @@ class MessageSegment(BaseMessageSegment["Message"]):
     @staticmethod
     def video(
         videoKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
-    ) -> "MessageSegment":
+    ) -> "Video":
         return Video("video", {"videoKey": videoKey, "_raw": raw})
 
     @staticmethod
     def file(
         fileKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
-    ) -> "MessageSegment":
+    ) -> "File":
         return File("file", {"fileKey": fileKey, "_raw": raw})
 
     @staticmethod
@@ -83,16 +83,15 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Markdown("markdown", {"text": text})
 
     @staticmethod
-    def html(text: str) -> "MessageSegment":
+    def html(text: str) -> "Html":
         return Html("html", {"text": text})
 
     @staticmethod
-    def buttons(buttons: list[list[ButtonBody]]):
+    def buttons(buttons: list[list[ButtonBody]]) -> "Buttons":
         """
         :param buttons: 按钮列表，子列表为每一行的按钮
-        :type buttons: list[list[ButtonBody]]
         """
-        return Buttons("button", {"buttons": buttons})
+        return Buttons("buttons", {"buttons": buttons})
 
     @staticmethod
     def audio(audioUrl: str, audioDuration: int, **kwargs):
@@ -285,9 +284,7 @@ class Message(BaseMessage[MessageSegment]):
         if "buttons" in self:
             buttons = self["buttons"]
             assert isinstance(buttons, Buttons)
-            result["buttons"] = [
-                model_dump(b) for button in buttons.data["buttons"] for b in button
-            ]
+            result["buttons"] = buttons.data["buttons"]
 
         if not self:
             raise ValueError("Empty message")
@@ -295,6 +292,7 @@ class Message(BaseMessage[MessageSegment]):
         # 只处理文本相关（text/markdown/html）和 Face 段
         if all(seg.is_text() or isinstance(seg, (At, Face)) for seg in self):
             text_buffer = ""
+            lasttexttype: str | None = None
             for seg in self:
                 if isinstance(seg, At):
                     result["at"].append(seg.data["user_id"])
@@ -302,38 +300,25 @@ class Message(BaseMessage[MessageSegment]):
                     text_buffer += f"[.{seg.data['code']}]\u200b"
                 elif seg.is_text():
                     text_buffer += seg.data["text"]
+                    lasttexttype = seg.type
+
             if text_buffer:
                 result["text"] = text_buffer
-                return result, "text"
-            # 只有@，无文本
+                # 如果没有任何文本段（只有 @），默认仍然用 text
+                return result, lasttexttype or "text"
+            # 只有 @，无文本
             return result, "text"
-
-        # 处理单段消息
-        if len(self) == 1:
-            seg = self[0]
-            if isinstance(seg, At):
-                return ({"at": [seg.data["user_id"]]}, "text")
-            elif isinstance(seg, Face):
-                return ({"text": f"[.{seg.data['code']}]\u200b"}, "text")
-            else:
-                return seg.data, seg.type
 
         # 处理混合类型（如图片、文件等）
         _type = None
-        prev_type: Optional[str] = None
         for seg in self:
             if isinstance(seg, At):
                 result["at"].append(seg.data["user_id"])
             elif seg.is_text():
-                if prev_type == seg.type and "text" in result:
-                    result["text"] = result["text"] + seg.data["text"]
-                else:
-                    result["text"] = seg.data["text"]
-                prev_type = seg.type
+                result["text"] = seg.data["text"]
                 _type = seg.type
             else:
                 result |= seg.data
-                prev_type = seg.type
                 _type = seg.type
         return result, _type or "text"
 
