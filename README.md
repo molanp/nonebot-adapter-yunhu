@@ -8,7 +8,6 @@ NoneBot-Adapter-YunHu
 _✨ YunHu adapter for NoneBot2 ✨_
 
 [![PyPI](https://img.shields.io/pypi/v/nonebot-adapter-yunhu)](https://pypi.org/project/nonebot-adapter-yunhu/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/nonebot-adapter-yunhu)](https://pypi.org/project/nonebot-adapter-yunhu/)
 ![GitHub](https://img.shields.io/github/license/molanp/nonebot-adapter-yunhu)
 
 </div>
