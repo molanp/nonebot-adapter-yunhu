@@ -30,7 +30,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
 
     @override
     def is_text(self) -> bool:
-        return self.type in ("text", "markdown", "html")
+        return self.type == "text"
 
     @override
     def __str__(self) -> str:
