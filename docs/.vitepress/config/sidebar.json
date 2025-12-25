@@ -39,6 +39,10 @@
       {
         "text": "接口",
         "link": "/markdown/dev/apis"
+      },
+      {
+        "text": "权限相关",
+        "link": "/markdown/dev/permissions"
       }
     ]
   },
