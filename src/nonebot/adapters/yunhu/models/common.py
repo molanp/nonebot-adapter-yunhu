@@ -23,6 +23,8 @@ class Sender(BaseModel):
     """发送者级别(群主[私聊消息也为owner]、管理员、群成员、未知[tip消息等])"""
     senderNickname: str
     """发送者昵称"""
+    senderAvatarUrl: str
+    """发送者头像Url"""
 
 
 class Chat(BaseModel):
@@ -315,7 +317,7 @@ class ButtonReportNoticeDetail(BaseModel):
     time: int
     """触发事件时间戳,毫秒13位时间戳"""
     msgId: str
-    """消息ID"""
+    """被触发按钮的消息ID"""
     recvId: str
     """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
     recvType: Literal["group", "user"]
