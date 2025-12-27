@@ -25,7 +25,7 @@ class SendMsgResponse(BaseModel):
     """返回信息"""
 
 
-class chatType(Enum):
+class CheckChatType(Enum):
     USER = 1
     """用户"""
     GROUP = 2
@@ -36,29 +36,29 @@ class chatType(Enum):
 
 class CheckChatInfoRecord(BaseModel):
     """
-    聊天信息检查记录模型
+    聊天信息审核记录
 
-    用于表示机器人聊天信息的审核记录信息
+    用于表示聊天信息的审核记录信息
     """
 
     id: int
-    """某种神秘的ID"""
+    """记录ID"""
     chatId: str
     """对象ID"""
-    chatType: chatType
+    chatType: CheckChatType
     """对象类型"""
     checkWay: str
-    """未知"""
+    """审核方式"""
     reason: str
-    """未知"""
+    """审核原因"""
     status: int
-    """未知"""
+    """审核状态"""
     createTime: int
     """创建时间戳"""
     updateTime: int
-    """最近更新时间戳"""
+    """更新时间戳"""
     delFlag: int
-    """是否被删除"""
+    """删除标记, 0表示未删除"""
 
 
 class Bot(BaseModel):
@@ -81,9 +81,9 @@ class Bot(BaseModel):
     avatarUrl: str
     """头像URL地址"""
     token: str
-    """访问令牌 (通常为空)"""
+    """机器人令牌"""
     link: str
-    """机器人订阅接口URL (通常为空)"""
+    """链接"""
     introduction: str
     """机器人简介"""
     createBy: str
@@ -95,9 +95,28 @@ class Bot(BaseModel):
     private: int
     """是否私有 (0:公开, 1:私有)"""
     uri: str
-    """API发送消息地址"""
+    """机器人URI"""
     checkChatInfoRecord: CheckChatInfoRecord
-    """聊天信息检查记录"""
+    """聊天审核记录"""
+
+
+class GroupBotRel(BaseModel):
+    """群组与机器人关系"""
+
+    id: int
+    """关系ID"""
+    groupId: str
+    """群组ID"""
+    botId: str
+    """机器人ID"""
+    delFlag: int
+    """删除标记, 0表示未删除 """
+    createTime: int
+    """创建时间戳"""
+    updateTime: int
+    """更新时间戳"""
+    bot: Bot
+    """机器人信息"""
 
 
 class BotInfoData(BaseModel):
@@ -151,9 +170,11 @@ class Group(BaseModel):
     category: str
     """群聊分类"""
     uri: str
-    """不知道"""
+    """机器人URI"""
+    groupBotRel: GroupBotRel
+    """群组与机器人关系"""
     checkChatInfoRecord: CheckChatInfoRecord
-    """群聊检查记录"""
+    """聊天信息审核记录"""
 
 
 class GroupInfoData(BaseModel):

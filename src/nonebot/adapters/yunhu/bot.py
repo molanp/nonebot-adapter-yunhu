@@ -430,8 +430,8 @@ class Bot(BaseBot):
 
         response = await self.call_api(
             "https://chat-web-go.jwzhd.com/v1/user/homepage",
-            method="POST",
-            json={"userId": user_id},
+            method="GET",
+            params={"userId": user_id},
         )
         return type_validate_python(UserInfo, response)
 

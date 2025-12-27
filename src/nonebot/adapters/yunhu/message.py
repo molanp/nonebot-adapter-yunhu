@@ -6,7 +6,6 @@ from typing_extensions import override, NotRequired
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
-from nonebot.compat import model_dump
 from nonebot.log import logger
 
 from .models.common import (
