@@ -125,7 +125,7 @@ class Markdown(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return self.data["text"]
+        return f"[markdown:{self.data['text']}"
 
 
 @dataclass
@@ -135,7 +135,7 @@ class Html(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return self.data["text"]
+        return f"[html:{self.data['text']}"
 
 
 class _AtData(TypedDict):
