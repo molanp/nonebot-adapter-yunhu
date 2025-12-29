@@ -77,7 +77,7 @@ nb create
 
 然后打开配置文件(一般是`.env.prod`)，将上一步获取的 **机器人 ID** 和 **Token** 填入对应的配置项中。
 
-![Nonebot配置项](/assets/QQ20251216-124633.png)
+![Nonebot配置项](/assets/QQ20251229-220826.png)
 
 ::: warning
 如果你是手动安装的适配器，请打开`bot.py`文件，导入并激活适配器

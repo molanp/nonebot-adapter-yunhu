@@ -23,6 +23,11 @@
   - **描述**: 填写您在云湖平台获取的机器人 **Token**。请妥善保管，不要泄露。
   - **必填**: 是
 
+-  **`use_stream`**: (`bool`)
+  - **描述**: 是否使用流式 API 调用。
+  - **默认值**: `false`
+  - **必填**: 否
+
 ## 进阶设置
 
 ### API 调用超时时间 (`API_TIMEOUT`)
@@ -82,7 +87,8 @@
 ```dotenv
 YUNHU_BOTS = '[{
     "app_id": "123",
-    "token": "xxx"
+    "token": "xxx",
+    "use_stream": true
 }
 ]
 '
