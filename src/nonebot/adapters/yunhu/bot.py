@@ -589,17 +589,30 @@ class Bot(BaseBot):
         :param content_type: 消息类型,取值如下text/image/video/file/markdown/html
         :param parent_id: 被引用的消息ID
         """
-        result = await self.call_api(
-            "bot/send",
-            method="POST",
-            json={
-                "recvId": receive_id,
-                "recvType": receive_type,
-                "content": content,
-                "contentType": content_type,
-                "parentId": parent_id,
-            },
-        )
+        if self.bot_config.use_stream and content_type in {"text", "markdown"}:
+            result = await self.call_api(
+                "bot/send-stream",
+                method="POST",
+                params={
+                    "recvId": receive_id,
+                    "recvType": receive_type,
+                    "contentType": content_type,
+                },
+                data=content["text"].encode("utf-8"),
+                _use_stream=True,
+            )
+        else:
+            result = await self.call_api(
+                "bot/send",
+                method="POST",
+                json={
+                    "recvId": receive_id,
+                    "recvType": receive_type,
+                    "content": content,
+                    "contentType": content_type,
+                    "parentId": parent_id,
+                },
+            )
         return type_validate_python(SendMsgResponse, result)
 
     async def post_file(

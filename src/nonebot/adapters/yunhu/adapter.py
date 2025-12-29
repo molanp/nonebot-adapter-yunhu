@@ -129,6 +129,7 @@ class Adapter(BaseAdapter):
 
     async def send_request(self, request: Request, **data: Any):
         return_response = data.get("_return_response", False)
+        use_stream = data.get("_use_stream", False)
         timeout: float = data.get("_timeout", self.config.api_timeout)
         request.timeout = timeout
 
@@ -136,6 +137,20 @@ class Adapter(BaseAdapter):
             raise ApiNotAvailable
 
         try:
+            if use_stream:
+                result = []
+                is_json = None
+                async for response in self.driver.stream_request(request):
+                    result.append(response.content)
+                    if is_json is None:
+                        is_json = response.headers["Content-Type"].find("application/json") != -1
+                content = b"".join(result) if result else b""
+
+                if not is_json:
+                    return content
+                content_str = content.decode('utf-8')
+                return json.loads(content_str)
+
             response = await self.driver.request(request)
 
             if 200 <= response.status_code < 300:
@@ -183,7 +198,7 @@ class Adapter(BaseAdapter):
             params=params,
         )
 
-        result = await self.send_request(request)
+        result = await self.send_request(request, _use_stream=data.get("_use_stream"))
         if isinstance(result, dict) and result.get("code") != 1:
             raise ActionFailed(message=result.get("msg"))
         return result

@@ -318,9 +318,9 @@ class ButtonReportNoticeDetail(BaseModel):
     """触发事件时间戳,毫秒13位时间戳"""
     msgId: str
     """被触发按钮的消息ID"""
-    recvId: str
+    chatId: str = Field(alias="recvId")
     """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
-    recvType: Literal["group", "user"]
+    chatType: Literal["group", "user"] = Field(alias="recvType")
     """触发事件的对象类型"""
     userId: str
     """触发事件用户ID"""
@@ -328,38 +328,31 @@ class ButtonReportNoticeDetail(BaseModel):
     """被点击的按钮的value值"""
 
 
-class TipNoticeContent(BaseModel):
-    """群提示消息内容"""
-
-    text: str
-    """提示内容"""
-
-
-class TipNoticeBody(BaseModel):
-    """群提示消息体"""
-
-    msgId: str
-    """消息ID"""
-    sendTime: int
-    """提示时间时间戳,毫秒13位时间戳"""
-    chatId: str
-    """群ID"""
-    chatType: Literal["group"]
-    """事件对象类型"""
-    contentType: Literal["tip"]
-    """消息内容类型"""
-    content: TipNoticeContent
-    """群提示消息体"""
-
-
 class TipNoticeDetail(BaseModel):
     """群提示事件"""
 
-    sender: Sender
-    """发送者信息"""
-    chat: Chat
-    """事件对象信息"""
-    message: TipNoticeBody
+    time: int
+    """触发事件时间戳,毫秒13位时间戳"""
+    chatId: str
+    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
+    chatType: Literal["group", "bot"]
+    """触发事件的对象类型"""
+    content: str
+    """群提示消息内容"""
+    userId: str
+    """触发事件用户ID[发送该事件提示的用户]"""
+
+    @model_validator(mode="before")
+    @classmethod
+    def construct_tip_notice(cls, values: dict) -> dict:
+        """从消息事件提取必要参数"""
+        return {
+            "time": values["message"]["sendTime"],
+            "chatId": values["chat"]["chatId"],
+            "chatType": values["chat"]["chatType"],
+            "content": values["message"]["content"]["text"],
+            "userId": values["sender"]["senderId"],
+        }
 
 
 class BaseTextContent(TypedDict):
