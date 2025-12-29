@@ -182,13 +182,12 @@ class Adapter(BaseAdapter):
         self, bot: Bot, api: str, **data: Any
     ) -> Any:
         logger.debug(f"Calling API: {api}, data: {data}")
-        params = data.get("params")
+        params = data.get("params", {})
         if api.startswith("https://"):
             url = api
         else:
             url = self.get_api_url(api)
-            if params:
-                params["token"] = bot.bot_config.token
+            params["token"] = bot.bot_config.token
         request = Request(
             method=data["method"],
             url=url,
