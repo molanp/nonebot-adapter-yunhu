@@ -1,7 +1,8 @@
 from io import BytesIO
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
+import time
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union, cast
 from typing_extensions import override
 
 from nonebot.adapters import Bot as BaseBot
@@ -18,6 +19,7 @@ from .models import (
     BoardResponse,
     BaseTextContent,
     BASE_TEXT_TYPE,
+    BaseNotice,
 )
 
 from .exception import ActionFailed
@@ -152,40 +154,43 @@ async def send(
         else:
             receive_id = event.event.message.chatId
     elif isinstance(event, NoticeEvent):
-        receive_type = event.event.chatType
+        notice = cast(BaseNotice, event.event)
+        receive_type = notice.chatType
         if receive_type == "bot":
             receive_id = event.get_user_id()
             receive_type = "user"
         else:
-            receive_id = event.event.chatId
+            receive_id = notice.chatId
     else:
         raise ValueError("Cannot guess `receive_id` and `receive_type` to reply!")
 
     full_message = Message()  # create a new message for prepending
     at_sender = at_sender and bool(event.get_user_id())
     if at_sender:
+        if hasattr(event.event, "sender"):
+            nickname = event.event.sender.senderNickname
+        else:
+            nickname = await bot._get_user_nickname(event.get_user_id())
         full_message += (
             At(
                 "at",
                 {
                     "user_id": event.get_user_id(),
-                    "name": event.event.sender.senderNickname,
+                    "name": nickname,
                 },
             )
             + " "
         )
-        full_message = f"@{event.event.sender.senderNickname}\u200b" + full_message
+        full_message = f"@{nickname}\u200b" + full_message
     full_message += message
 
     content, msg_type = full_message.serialize()
+    if reply_to and isinstance(event, MessageEvent):
+        parentId = event.event.message.msgId
+    else:
+        parentId = None
 
-    return await bot.send_msg(
-        receive_type,
-        receive_id,
-        content,
-        msg_type,
-        event.event.message.msgId if reply_to else None,
-    )
+    return await bot.send_msg(receive_type, receive_id, content, msg_type, parentId)
 
 
 async def upload_resource_data(
@@ -280,6 +285,10 @@ class Bot(BaseBot):
     """Bot 配置"""
     nickname: str
     """Bot 昵称"""
+    _user_nickname_cache: dict[str, tuple[float, str]]
+    """user_id -> (expire_ts, nickname)"""
+    _USER_NICK_TTL: int = 300  # 5 分钟
+    """单个昵称缓存有效期，秒"""
 
     @override
     def __init__(
@@ -293,6 +302,23 @@ class Bot(BaseBot):
         super().__init__(adapter, self_id)
         self.bot_config = bot_config
         self.nickname = nickname
+        self._user_nickname_cache = {}
+
+    async def _get_user_nickname(self, user_id: str) -> str:
+        """带 TTL 的用户昵称缓存封装"""
+        now = time.time()
+        cached = self._user_nickname_cache.get(user_id)
+        if cached and cached[0] > now:
+            return cached[1]
+
+        user_info = await self.get_user_info(user_id)
+        if user_info.data and user_info.data.user.nickname:
+            nickname = user_info.data.user.nickname
+        else:
+            nickname = user_id
+
+        self._user_nickname_cache[user_id] = (now + self._USER_NICK_TTL, nickname)
+        return nickname
 
     async def get_msgs(
         self, chat_id: str, chat_type: Literal["user", "group"], **params: Any

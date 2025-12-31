@@ -260,30 +260,31 @@ class Reply(BaseModel):
     """消息发送时间，毫秒13位时间戳"""
 
 
-class GroupNoticeDetail(BaseModel):
+class BaseNotice(BaseModel):
+    """基础通知数据结构"""
+
     time: int
     """触发事件时间戳,毫秒13位时间戳"""
-    chatId: str
-    """群ID"""
-    chatType: Literal["group"]
-    """事件对象类型"""
+    chatId: str = Field(alias="recvId")
+    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
+    chatType: Literal["group", "user", "bot"] = Field(alias="recvType")
+    """触发事件对象类型"""
     userId: str
-    """触发事件的用户ID"""
+    """触发事件用户ID"""
+
+
+class GroupNoticeDetail(BaseNotice):
+    """群组通知数据结构"""
+
     nickname: str
     """触发事件用户昵称"""
     avatarUrl: str
     """触发事件用户头像URL"""
 
 
-class BotNoticeDetail(BaseModel):
-    time: int
-    """触发事件时间戳,毫秒13位时间戳"""
-    chatId: str
-    """自身ID"""
-    chatType: Literal["bot"]
-    """事件对象类型"""
-    userId: str
-    """触发事件的用户ID"""
+class BotNoticeDetail(BaseNotice):
+    """机器人通知数据结构"""
+
     nickname: str
     """触发事件用户昵称"""
     avatarUrl: str
@@ -311,36 +312,20 @@ class ButtonBody(TypedDict):
     """当actionType为2时，该值会复制到剪贴板"""
 
 
-class ButtonReportNoticeDetail(BaseModel):
+class ButtonReportNoticeDetail(BaseNotice):
     """按钮汇报事件"""
 
-    time: int
-    """触发事件时间戳,毫秒13位时间戳"""
     msgId: str
     """被触发按钮的消息ID"""
-    chatId: str = Field(alias="recvId")
-    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
-    chatType: Literal["group", "user"] = Field(alias="recvType")
-    """触发事件的对象类型"""
-    userId: str
-    """触发事件用户ID"""
     value: str
     """被点击的按钮的value值"""
 
 
-class TipNoticeDetail(BaseModel):
+class TipNoticeDetail(BaseNotice):
     """群提示事件"""
 
-    time: int
-    """触发事件时间戳,毫秒13位时间戳"""
-    chatId: str
-    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
-    chatType: Literal["group", "bot"]
-    """触发事件的对象类型"""
     content: str
     """群提示消息内容"""
-    userId: str
-    """触发事件用户ID[发送该事件提示的用户]"""
 
     @model_validator(mode="before")
     @classmethod
