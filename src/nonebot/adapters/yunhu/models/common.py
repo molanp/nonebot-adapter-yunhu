@@ -1,6 +1,6 @@
 from typing import Literal, NotRequired, Optional, TypedDict, Union, Any
 from pydantic import BaseModel, Field
-from nonebot.compat import model_validator, model_dump
+from nonebot.compat import model_validator, model_dump, field_validator
 
 
 class EventHeader(BaseModel):
@@ -267,10 +267,18 @@ class BaseNotice(BaseModel):
     """触发事件时间戳,毫秒13位时间戳"""
     chatId: str = Field(alias="recvId")
     """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
-    chatType: Literal["group", "user", "bot"] = Field(alias="recvType")
+    chatType: Literal["group", "user"] = Field(alias="recvType")
     """触发事件对象类型"""
     userId: str
     """触发事件用户ID"""
+
+    @field_validator('chatType', mode='before')
+    @classmethod
+    def validate_chat_type(cls, value: str) -> str:
+        """验证并转换chatType字段"""
+        if value == "bot":
+            value= "user"
+        return value
 
 
 class GroupNoticeDetail(BaseNotice):
