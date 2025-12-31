@@ -328,6 +328,21 @@ class Message(BaseMessage[MessageSegment]):
         message_type: str,
         command_name: Optional[str] = None,
     ) -> "Message":
+        # 特殊情况：
+        # 1. 仅 text 消息会出现
+        # 2. command_name 形如 "xxx"
+        # 3. content.text 形如 "/xxx"
+        # 4. 消息内容就是这个 command_name
+        # 这种情况下，期望最终消息内容只有 command_name 本身，
+        # 不需要再把 content.text 解析追加一遍。
+        if (
+            command_name
+            and message_type == "text"
+            and isinstance(content, TextContent)
+            and content.text.removeprefix("/").strip() == command_name
+        ):
+            return Message(command_name)
+
         msg = Message(f"{command_name} ") if command_name else Message()
         parsed_content = content.to_dict()
         from .tool import YUNHU_EMOJI_MAP, _EMOJI_PATTERN
