@@ -89,7 +89,6 @@ class VideoContent(CommonContent):
     contentType: Literal["video"] = Field("video")
     videoUrl: str
     """视频地址"""
-    etag: str
     videoDuration: int
     """视频时长 (秒)"""
 
@@ -118,7 +117,6 @@ class FileContent(CommonContent):
     """文件地址"""
     fileSize: int
     """文件大小 (字节)"""
-    etag: str
 
     def to_dict(self) -> dict:
         return {"fileKey": self.fileName.split(".")[0]}
