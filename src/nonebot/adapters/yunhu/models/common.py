@@ -1,6 +1,6 @@
 from typing import Literal, NotRequired, Optional, TypedDict, Union, Any
 from pydantic import BaseModel, Field
-from nonebot.compat import model_validator, model_dump, field_validator
+from nonebot.compat import model_validator, model_dump, field_validator, PYDANTIC_V2, ConfigDict
 
 
 class EventHeader(BaseModel):
@@ -269,6 +269,13 @@ class BaseNotice(BaseModel):
     """触发事件对象类型"""
     userId: str
     """触发事件用户ID"""
+    
+    if PYDANTIC_V2:
+        model_config = ConfigDict(populate_by_name =True) # type: ignore
+    else:
+        class Config:
+            allow_population_by_field_name = True
+        
 
     @field_validator('chatType', mode='before')
     @classmethod
