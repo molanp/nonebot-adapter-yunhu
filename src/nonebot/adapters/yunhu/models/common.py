@@ -1,3 +1,4 @@
+from enum import IntEnum
 from typing import Literal, NotRequired, Optional, TypedDict, Union, Any
 from pydantic import BaseModel, Field
 from nonebot.compat import (
@@ -7,6 +8,12 @@ from nonebot.compat import (
     PYDANTIC_V2,
     ConfigDict,
 )
+
+class PostContentTypeEnum(IntEnum):
+    TEXT = 1
+    """普通文章"""
+    MARKDOWN = 2
+    """MarkDown文章"""
 
 
 class EventHeader(BaseModel):
@@ -131,6 +138,11 @@ class MarkdownContent(CommonContent):
     contentType: Literal["markdown"] = Field("markdown")
     text: str
 
+class PostContent(CommonContent):
+    contentType: Literal["post"] = Field("post")
+    text: str
+    postContentType: PostContentTypeEnum
+    """文章的文本类别"""
 
 class FileContent(CommonContent):
     contentType: Literal["file"] = Field("file")
@@ -215,6 +227,7 @@ Content = Union[
     VideoContent,
     FormContent,
     AudioContent,
+    PostContent
 ]
 
 
