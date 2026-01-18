@@ -144,7 +144,7 @@ async def send(
     message: Union[str, Message, MessageSegment],
     at_sender: bool = False,
     reply_to: bool = False,
-) -> Any:  # sourcery skip: use-fstring-for-concatenation
+) -> SendMsgResponse:  # sourcery skip: use-fstring-for-concatenation
     """默认回复消息处理函数。"""
 
     message = message if isinstance(message, Message) else Message(message)
@@ -716,13 +716,14 @@ class Bot(BaseBot):
         event: Event,
         message: Union[str, Message, MessageSegment],
         **kwargs: Any,
-    ) -> Any:
-        """根据 `event` 向触发事件的主体回复消息。
-        参数:
-            event: Event 对象
-            message: 要发送的消息
-            at_sender (bool): 是否 @ 事件主体
-            kwargs: 其他参数，可以与 {ref}`nonebot.adapters.yunhu.adapter.Adapter.custom_send` 配合使用
+    ) -> SendMsgResponse:
+        """
+        根据 `event` 向触发事件的主体回复消息。
+        
+        :params event: Event 对象
+        :params message: 要发送的消息
+        :params at_sender: 是否 @ 事件主体, 默认为 False
+        :params reply_to: 是否回复事件主体, 默认为 False
         返回:
             API 调用返回数据
         异常:

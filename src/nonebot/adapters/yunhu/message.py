@@ -107,7 +107,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Audio("audio", {"url": url, "duration": duration})
 
     @staticmethod
-    def face(code: str, emoji: Optional[str] = None) -> "MessageSegment":
+    def face(code: str, emoji: str = "") -> "MessageSegment":
         """表情"""
         return Face("face", {"code": code, "emoji": emoji})
 
@@ -241,7 +241,7 @@ class Audio(MessageSegment):
 class _FaceData(TypedDict):
     code: str
     """表情码"""
-    emoji: Optional[str]
+    emoji: str
     """字符emoji"""
 
 
