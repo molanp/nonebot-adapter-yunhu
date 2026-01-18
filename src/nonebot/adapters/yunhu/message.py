@@ -303,9 +303,9 @@ class Message(BaseMessage[MessageSegment]):
 
         # 按钮单独挂在 result 上
         if "buttons" in self:
-            buttons = self["buttons"]
-            assert isinstance(buttons, Buttons)
-            result["buttons"] = buttons.data["buttons"]
+            result["buttons"] = []
+            for seg in self["buttons"]:
+                result["buttons"].extend(seg.data["buttons"])
 
         # 只包含 Text / At / Face 的消息，统一走纯文本通道
         if all(seg.is_text() or isinstance(seg, (At, Face)) for seg in self):
