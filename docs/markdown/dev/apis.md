@@ -369,23 +369,59 @@ API 调用返回数据
 - `NetworkError`: 网络错误
 - `ActionFailed`: API 调用失败
 
-### _method_ post_file
+### _method_ upload_file
 
-::: warning
-不建议调用此方法，发送内容含有媒体消息段会自动上传
-:::
-上传文件获取 `fileKey`
+上传文件
 
-### _method_ post_video
+```python
+async def upload_file(
+    self,
+    src: Union[str, bytes, Path],
+):
+```
 
-::: warning
-不建议调用此方法，发送内容含有媒体消息段会自动上传
-:::
-上传视频获取 `videoKey`
+#### 参数
 
-### _method_ post_image
+- `src`: 文件资源地址,支持 url, bytes, Path
 
-::: warning
-不建议调用此方法，发送内容含有媒体消息段会自动上传
-:::
-上传文件获取 `imageKey`
+#### 返回
+
+- `tuple[str, str]`: (文件链接,文件key)
+
+### _method_ upload_video
+
+上传视频
+
+```python
+async def upload_video(
+    self,
+    src: Union[str, bytes, Path],
+):
+```
+
+#### 参数
+
+- `src`: 视频资源地址,支持 url, bytes, Path
+
+#### 返回
+
+- `tuple[str, str]`: (视频链接,视频key)
+
+### _method_ upload_image
+
+上传图片
+
+```python
+async def upload_file(
+    self,
+    src: Union[str, bytes, Path],
+):
+```
+
+#### 参数
+
+- `src`: 图片资源地址,支持 url, bytes, Path
+
+#### 返回
+
+- `tuple[str, str]`: (图片链接,图片key)
