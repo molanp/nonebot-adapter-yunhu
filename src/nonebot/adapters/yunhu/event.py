@@ -101,7 +101,7 @@ class MessageEvent(Event):
     def get_event_description(self) -> str:
         return (
             f"Message {self.event.message.msgId} from {self.get_user_id()}"
-            f"@[{self.event.message.chatType}:{self.event.message.chatId}]"
+            f"@[{self.event.message.chatType}:{self.event.sender.senderId}]"
             f" '{escape_tag(str(self.get_message()))}'"
         )
 

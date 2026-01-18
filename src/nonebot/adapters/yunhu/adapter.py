@@ -253,8 +253,8 @@ class Adapter(BaseAdapter):
                 try:
                     event = type_validate_python(model, json_data)
                     break
-                except Exception:
-                    logger.warning(f"Unsupported event: {json_data}")
+                except Exception as e:
+                    logger.warning(f"Unsupported event: {json_data}\nError: {type(e)}, {e}")
                     return
             else:
                 event = type_validate_python(Event, json_data)
@@ -263,9 +263,9 @@ class Adapter(BaseAdapter):
 
         except Exception as e:
             logger.error(
-                "<r><bg #f8bbd0>Failed to parse event. "
-                f"Raw: {escape_tag(str(json_data))}</bg #f8bbd0></r>",
-                e,
+                "Failed to parse event.\n"
+                f"Raw: {json_data}\n",
+                f"Error: {type(e)}, {e}"
             )
 
     @classmethod

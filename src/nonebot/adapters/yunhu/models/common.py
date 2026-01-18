@@ -90,6 +90,10 @@ class ImageContent(CommonContent):
     @model_validator(mode="before")
     @classmethod
     def _fill_image_key(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "expressionId" in values:
+            # 表情包的处理方法
+            values["imageUrl"] = f"https://chat-image1.jwznb.com/{values['imageName']}"
+            values["imageName"] = values["imageName"].split("/")[-1]
         values["imageKey"] = values["imageName"].split(".")[0]
         return values
 
@@ -250,17 +254,14 @@ class EventMessage(BaseModel):
         优先使用外层 contentType；若不存在则根据 content 字段特征启发式推断。
         """
         content = values.get("content")
-        if not isinstance(content, dict):
-            return values
-
-        # 如果已经有内层 contentType，保证外层一致或回填外层
+        if not content:
+            return values        # 如果已经有内层 contentType，保证外层一致或回填外层
         if "contentType" in content:
             values.setdefault("contentType", content["contentType"])
             return values
 
         # 如果有外层 contentType，则填充到 content 中
-        ct = values.get("contentType")
-        if ct is not None:
+        if ct := values.get("contentType"):
             if ct == "expression":
                 content = {"contentType": "image", **content}
                 values["content"] = content
@@ -289,11 +290,9 @@ class Reply(BaseModel):
     """发送者类型"""
     senderNickname: str
     """发送者昵称"""
-    contentType: Literal[
-        "text", "image", "markdown", "file", "video", "html", "expression", "form"
-    ]
+    contentType: str
     """消息内容类型"""
-    content: Union[Content, dict]
+    content: Content = Field(..., discriminator="contentType")
     """消息正文（根据 contentType 解析为不同模型）"""
     commandId: Optional[int] = None
     """指令ID, 可用来区分用户发送的指令"""
@@ -301,6 +300,29 @@ class Reply(BaseModel):
     """指令名称, 可用来区分用户发送的指令"""
     sendTime: int
     """消息发送时间，毫秒13位时间戳"""
+
+    @model_validator(mode="before")
+    def _fill_content_type(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """
+        在解析前确保 content 内包含 contentType（discriminator 需要）。
+        优先使用外层 contentType；若不存在则根据 content 字段特征启发式推断。
+        """
+        content = values.get("content")
+        if not content:
+            values["content"] = {"contentType": "text", "text": "空消息"}
+            values.setdefault("contentType", "text")
+            return values
+        # 如果已经有内层 contentType，保证外层一致或回填外层
+        if "contentType" in content:
+            values.setdefault("contentType", content["contentType"])
+            return values
+
+        # 如果有外层 contentType，则填充到 content 中
+        if ct := values.get("contentType"):
+            content = {"contentType": ct, **content}
+            values["content"] = content
+
+        return values
 
 
 class BaseNotice(BaseModel):

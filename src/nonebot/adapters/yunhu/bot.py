@@ -51,9 +51,13 @@ async def _check_reply(bot: "Bot", event: "Event"):
 
     if event.event.message.parentId != event.event.message.msgId:
         try:
+            if event.event.message.chatType == "bot":
+                chat_id = event.event.sender.senderId
+            else:
+                chat_id = event.event.message.chatId
             result = await bot.get_msg(
                 event.event.message.parentId,
-                event.event.message.chatId,
+                chat_id,
                 event.event.message.chatType,
             )
             if result.senderId == bot.bot_config.app_id:
@@ -61,7 +65,7 @@ async def _check_reply(bot: "Bot", event: "Event"):
                 event.reply = result
 
         except Exception as e:
-            logger.error(f"Failed to get reply message e:{e}")
+            logger.error(f"Failed to get reply message e: {type(e)}, {e}")
 
 
 def _check_at_me(bot: "Bot", event: "Event"):
