@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import re
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
-from typing_extensions import override, NotRequired
+from typing_extensions import override
 
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
@@ -107,7 +107,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Audio("audio", {"url": url, "duration": duration})
 
     @staticmethod
-    def face(code: str, emoji: str) -> "MessageSegment":
+    def face(code: str, emoji: Optional[str] = None) -> "MessageSegment":
         """表情"""
         return Face("face", {"code": code, "emoji": emoji})
 
@@ -241,7 +241,7 @@ class Audio(MessageSegment):
 class _FaceData(TypedDict):
     code: str
     """表情码"""
-    emoji: str
+    emoji: Optional[str]
     """字符emoji"""
 
 
