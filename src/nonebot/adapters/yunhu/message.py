@@ -294,7 +294,7 @@ class Message(BaseMessage[MessageSegment]):
         if not self:
             raise ValueError("Empty message")
 
-        result: dict[str, Any] = {"at": [], "text": ""}
+        result: dict[str, Any] = {"at": []}
 
         # 不支持语音发送
         if "audio" in self:
