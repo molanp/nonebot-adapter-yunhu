@@ -137,7 +137,7 @@ async def fetch_bytes(adapter: Adapter, url: str) -> bytes:
     try:
         response: Response = await adapter.driver.request(request)
     except Exception as e:
-        raise NetworkError(f"语音 {url} 下载失败: {e}") from e
+        raise NetworkError(f"Fail to fetch bytes: {e}") from e
     if isinstance(response.content, bytes):
         return response.content
     raise ValueError("Response content is not bytes")

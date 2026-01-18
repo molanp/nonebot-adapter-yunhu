@@ -177,7 +177,7 @@ async def send(
         full_message += MessageSegment.at(user_id=event.get_user_id(), name=nickname)
     full_message += message
     # 在序列化消息前完成资源上传
-    full_message = await upload_resource_data(bot, message)
+    full_message = await upload_resource_data(bot, full_message)
     content, msg_type = full_message.serialize()
     if reply_to and isinstance(event, MessageEvent):
         parentId = event.event.message.msgId
@@ -613,7 +613,8 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            src = open(src, "rb").read()
+            with src.open("rb") as f:
+                src = f.read()
 
         extension = filetype.guess_extension(src) or "dat"
 
@@ -643,7 +644,8 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            src = open(src, "rb").read()
+            with src.open("rb") as f:
+                src = f.read()
 
         extension = filetype.guess_extension(src) or "mp4"
 
@@ -670,7 +672,8 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            src = open(src, "rb").read()
+            with src.open("rb") as f:
+                src = f.read()
 
         mime = filetype.guess_mime(src)
 
@@ -692,7 +695,6 @@ class Bot(BaseBot):
         extension = mime.split("/")[1]
         if extension == "jpeg":
             extension = "jpg"
-
 
         images = [("image", src)]
 

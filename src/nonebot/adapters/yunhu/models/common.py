@@ -103,6 +103,13 @@ class VideoContent(CommonContent):
     videoKey: str
     """视频key"""
 
+    if PYDANTIC_V2:
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
+
     @model_validator(mode="before")
     @classmethod
     def _fill_video_url(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -131,6 +138,13 @@ class FileContent(CommonContent):
     """文件大小 (字节)"""
     fileKey: str
     """文件key"""
+
+    if PYDANTIC_V2:
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
 
     @model_validator(mode="before")
     @classmethod
@@ -173,6 +187,13 @@ class AudioContent(CommonContent):
     """音频地址(直接访问需要Refer:https://myapp.jwznb.com)"""
     duration: int = Field(alias="audioDuration")
     """音频时长,单位秒"""
+
+    if PYDANTIC_V2:
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
 
     @model_validator(mode="before")
     @classmethod
