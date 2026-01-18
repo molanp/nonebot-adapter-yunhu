@@ -617,8 +617,7 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            with src.open("rb") as f:
-                src = f.read()
+            src = src.read_bytes()
 
         extension = filetype.guess_extension(src) or "dat"
 
@@ -648,8 +647,7 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            with src.open("rb") as f:
-                src = f.read()
+            src = src.read_bytes()
 
         extension = filetype.guess_extension(src) or "mp4"
 
@@ -676,8 +674,7 @@ class Bot(BaseBot):
         if isinstance(src, str):
             src = await fetch_bytes(self.adapter, src)
         if isinstance(src, Path):
-            with src.open("rb") as f:
-                src = f.read()
+            src = src.read_bytes()
 
         mime = filetype.guess_mime(src)
 
