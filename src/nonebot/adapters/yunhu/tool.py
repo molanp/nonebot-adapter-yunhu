@@ -1,5 +1,8 @@
 import re
+from nonebot.drivers import HTTPClientMixin, Request, Response
+from nonebot.adapters import Adapter
 
+from .exception import ApiNotAvailable, NetworkError
 
 YUNHU_EMOJI_MAP = {
     "[.滑稽]": "🤪",
@@ -120,3 +123,24 @@ YUNHU_EMOJI_MAP = {
 # 按长度降序，防止短 key 优先匹配并截断长 key
 _EMOJI_KEYS = sorted(YUNHU_EMOJI_MAP.keys(), key=len, reverse=True)
 _EMOJI_PATTERN = re.compile("|".join(re.escape(k) for k in _EMOJI_KEYS))
+
+
+async def fetch_bytes(adapter: Adapter, url: str) -> bytes:
+    """下载url资源，返回bytes"""
+    
+    request = Request(
+        method="GET",
+        url=url,
+    )
+    if not isinstance(adapter.driver, HTTPClientMixin):
+        raise ApiNotAvailable
+    try:
+        response: Response = await adapter.driver.request(request)
+    except Exception as e:
+        raise NetworkError(f"Fail to fetch bytes: {e}") from e
+    if isinstance(response.content, bytes):
+        return response.content
+    raise ValueError("Response content is not bytes")
+
+
+__all__ = ["_EMOJI_KEYS", "_EMOJI_PATTERN", "fetch_bytes"]
