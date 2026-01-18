@@ -1,8 +1,8 @@
-from io import BytesIO
 from pathlib import Path
 import re
 import time
 from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union, cast
+import filetype
 from typing_extensions import override
 
 from nonebot.adapters import Bot as BaseBot
@@ -33,10 +33,13 @@ from .event import (
     PrivateMessageEvent,
     NoticeEvent,
 )
-from .message import At, File, Image, Message, MessageSegment, Video
+from .message import Message, MessageSegment
 
 if TYPE_CHECKING:
     from .adapter import Adapter
+
+
+from .tool import fetch_bytes
 
 
 async def _check_reply(bot: "Bot", event: "Event"):
@@ -171,19 +174,10 @@ async def send(
             nickname = event.event.sender.senderNickname
         else:
             nickname = await bot._get_user_nickname(event.get_user_id())
-        full_message += (
-            At(
-                "at",
-                {
-                    "user_id": event.get_user_id(),
-                    "name": nickname,
-                },
-            )
-            + " "
-        )
-        full_message = f"@{nickname}\u200b" + full_message
+        full_message += MessageSegment.at(user_id=event.get_user_id(), name=nickname)
     full_message += message
-
+    # 在序列化消息前完成资源上传
+    full_message = await upload_resource_data(bot, message)
     content, msg_type = full_message.serialize()
     if reply_to and isinstance(event, MessageEvent):
         parentId = event.event.message.msgId
@@ -198,81 +192,46 @@ async def upload_resource_data(
     message: Message,
 ) -> Message:
     """
-    遍历消息段，查找image、video、file类型并上传raw数据
+    遍历消息段，查找image、video、file类型并上传raw/url数据
 
-    Args:
-        message: 要处理的消息对象
+    :params message: 要处理的消息对象
 
-    Returns:
-        处理后的消息对象，其中缺失key的资源段已被设置key
-
-    Raises:
-        ValueError: 当资源段既没有key也没有raw数据时抛出异常
+    :returns: 处理后的消息对象，其中缺失key的资源段已被设置key
     """
+    resource_config: dict[str, tuple[str, Callable, Callable]] = {
+        "image": ("imageKey", bot.upload_image, MessageSegment.image),
+        "video": ("videoKey", bot.upload_video, MessageSegment.video),
+        "file": ("fileKey", bot.upload_file, MessageSegment.file),
+    }
+
     processed_message = Message()
 
     for segment in message:
-        raw = segment.data.get("_raw")
-        if isinstance(segment, Image):
-            # 处理图片类型
-            if not segment.data.get("imageKey") and raw:
-                # 如果没有imageKey但有raw数据，则上传
-                image_key = await bot.post_image(raw)
-                processed_segment = Image(
-                    "image",
-                    {
-                        "imageKey": image_key,
-                    },
-                )
-                processed_message.append(processed_segment)
-            elif not segment.data.get("imageKey") and not raw:
-                # 既没有key也没有raw数据，报错
-                raise ValueError("Image segment missing both imageKey and raw data")
-            else:
-                # 已有imageKey，直接添加
-                processed_message.append(segment)
-
-        elif isinstance(segment, Video):
-            # 处理视频类型
-            if not segment.data.get("videoKey") and raw:
-                # 如果没有videoKey但有raw数据，则上传
-                video_key = await bot.post_video(raw)
-                processed_segment = Video(
-                    "video",
-                    {
-                        "videoKey": video_key,
-                    },
-                )
-                processed_message.append(processed_segment)
-            elif not segment.data.get("videoKey") and not raw:
-                # 既没有key也没有raw数据，报错
-                raise ValueError("Video segment missing both videoKey and raw data")
-            else:
-                # 已有videoKey，直接添加
-                processed_message.append(segment)
-
-        elif isinstance(segment, File):
-            # 处理文件类型
-            if not segment.data.get("fileKey") and raw:
-                # 如果没有fileKey但有raw数据，则上传
-                file_key = await bot.post_file(raw)
-                processed_segment = File(
-                    "file",
-                    {
-                        "fileKey": file_key,
-                    },
-                )
-                processed_message.append(processed_segment)
-            elif not segment.data.get("fileKey") and not raw:
-                # 既没有key也没有raw数据，报错
-                raise ValueError("File segment missing both fileKey and raw data")
-            else:
-                # 已有fileKey，直接添加
-                processed_message.append(segment)
-
-        else:
-            # 其他类型消息段直接添加
+        if segment.type not in resource_config:
             processed_message.append(segment)
+            continue
+
+        key_field, upload_method, segment_builder = resource_config[segment.type]
+
+        # 已有key，直接添加
+        if key_field in segment.data:
+            processed_message += segment
+            continue
+
+        raw = segment.data.get("raw")
+        url = segment.data.get("url")
+
+        # 上传资源
+        if raw or url:
+            resource_url, key = await upload_method(raw or url)
+            processed_message += segment_builder(
+                url=resource_url,
+                raw=raw,
+                **{key_field: key},
+            )
+        else:
+            # 既无raw也无url，保持原样
+            processed_message += segment
 
     return processed_message
 
@@ -641,53 +600,112 @@ class Bot(BaseBot):
             )
         return type_validate_python(SendMsgResponse, result)
 
-    async def post_file(
+    async def upload_file(
         self,
-        file: Union[str, bytes, BytesIO, Path],
+        src: Union[str, bytes, Path],
     ):
-        if not isinstance(file, (bytes, BytesIO)):
-            file = open(file, "rb").read()
+        """
+        上传文件
 
-        files = [("file", file)]
+        :param src: 文件资源地址,支持 url, bytes, Path
+        :return: (文件链接,文件key)
+        """
+        if isinstance(src, str):
+            src = await fetch_bytes(self.adapter, src)
+        if isinstance(src, Path):
+            src = open(src, "rb").read()
+
+        extension = filetype.guess_extension(src) or "dat"
+
+        files = [("file", src, f"file.{extension}")]
 
         response = await self.call_api("file/upload", method="POST", files=files)
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
             )
-        return response["data"]["fileKey"]
+        fileKey = response["data"]["fileKey"]
+        return (
+            f"https://chat-file.jwznb.com/{fileKey}.{extension}",
+            fileKey,
+        )
 
-    async def post_video(
+    async def upload_video(
         self,
-        video: Union[str, bytes, BytesIO, Path],
-    ) -> str:
-        if not isinstance(video, (bytes, BytesIO)):
-            video = open(video, "rb").read()
+        src: Union[str, bytes, Path],
+    ) -> tuple[str, str]:
+        """
+        上传视频
 
-        videos = [("video", video)]
+        :param src: 视频资源地址,支持 url, bytes, Path
+        :return: (视频链接,视频key)
+        """
+        if isinstance(src, str):
+            src = await fetch_bytes(self.adapter, src)
+        if isinstance(src, Path):
+            src = open(src, "rb").read()
+
+        extension = filetype.guess_extension(src) or "mp4"
+
+        videos = [("video", src, f"video.{extension}")]
 
         response = await self.call_api("video/upload", method="POST", files=videos)
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
             )
-        return response["data"]["videoKey"]
+        videoKey = response["data"]["videoKey"]
+        return (
+            f"https://chat-video1.jwznb.com/{videoKey}.{extension}",
+            videoKey,
+        )
 
-    async def post_image(
-        self,
-        image: Union[str, bytes, BytesIO, Path],
-    ) -> str:
-        if not isinstance(image, (bytes, BytesIO)):
-            image = open(image, "rb").read()
+    async def upload_image(self, src: Union[str, bytes, Path]) -> tuple[str, str]:
+        """
+        上传图片
 
-        images = [("image", image)]
+        :param src: 图片资源地址,支持 url, bytes, Path
+        :return: (图片链接,图片key)
+        """
+        if isinstance(src, str):
+            src = await fetch_bytes(self.adapter, src)
+        if isinstance(src, Path):
+            src = open(src, "rb").read()
+
+        mime = filetype.guess_mime(src)
+
+        validMime = [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "image/bmp",
+            "image/tiff",
+            "image/svg+xml",
+            "image/x-icon",
+            "image/jpg",
+        ]
+
+        if mime not in validMime:
+            raise ValueError(f"Invalid image type: {mime}")
+
+        extension = mime.split("/")[1]
+        if extension == "jpeg":
+            extension = "jpg"
+
+
+        images = [("image", src)]
 
         response = await self.call_api("image/upload", method="POST", files=images)
         if "data" not in response:
             raise ActionFailed(
                 message=response.get("msg", "Unknown error"),
             )
-        return response["data"]["imageKey"]
+        imageKey = response["data"]["imageKey"]
+        return (
+            f"https://chat-img.jwznb.com/{imageKey}.{extension}",
+            imageKey,
+        )
 
     @override
     async def send(  # pyright: ignore[reportIncompatibleMethodOverride]

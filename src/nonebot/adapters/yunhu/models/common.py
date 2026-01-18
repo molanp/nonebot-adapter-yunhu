@@ -1,6 +1,12 @@
 from typing import Literal, NotRequired, Optional, TypedDict, Union, Any
 from pydantic import BaseModel, Field
-from nonebot.compat import model_validator, model_dump, field_validator, PYDANTIC_V2, ConfigDict
+from nonebot.compat import (
+    model_validator,
+    model_dump,
+    field_validator,
+    PYDANTIC_V2,
+    ConfigDict,
+)
 
 
 class EventHeader(BaseModel):
@@ -63,40 +69,46 @@ class TextContent(CommonContent):
 
 class ImageContent(CommonContent):
     contentType: Literal["image"] = Field("image")
-    imageUrl: str
+    url: str = Field(alias="imageUrl")
     """图片地址(直接访问需要Refer:https://www.yhchat.com/)"""
-    imageName: str
-    """图片文件名，可用于发送"""
-    imageWidth: int
+    name: str = Field(alias="imageName")
+    """图片文件名"""
+    width: int = Field(alias="imageWidth")
     """图片宽度 (像素)"""
-    imageHeight: int
+    height: int = Field(alias="imageHeight")
     """图片高度 (像素)"""
     imageKey: str
+    """图片hash"""
+
+    if PYDANTIC_V2:
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore
+    else:
+
+        class Config:
+            allow_population_by_field_name = True
 
     @model_validator(mode="before")
     @classmethod
-    def _fill_image_url(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if isinstance(values, dict) and "imageUrl" not in values:
-            if image_name := values.get("imageName"):
-                values["imageUrl"] = f"https://chat-img.jwznb.com/{image_name}"
-        if isinstance(values, dict) and "imageKey" not in values:
-            if image_name := values.get("imageName"):
-                values["imageKey"] = values["imageName"].split(".")[0]
+    def _fill_image_key(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["imageKey"] = values["imageName"].split(".")[0]
         return values
 
 
 class VideoContent(CommonContent):
     contentType: Literal["video"] = Field("video")
-    videoUrl: str
-    """视频地址"""
-    videoDuration: int
+    url: str = Field(alias="videoUrl")
+    """视频地址(直接访问需要Refer:https://myapp.jwznb.com)"""
+    duration: int = Field(alias="videoDuration")
     """视频时长 (秒)"""
+    videoKey: str
+    """视频key"""
 
-    def to_dict(self) -> dict:
-        return {"videoKey": self.videoUrl.split(".")[0]}
-
-    def get_url(self) -> str:
-        return f"https://chat-video1.jwznb.com/{self.videoUrl}"
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_video_url(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["videoKey"] = values["videoUrl"].split(".")[0]
+        values["videoUrl"] = f"https://chat-video1.jwznb.com/{values['videoUrl']}"
+        return values
 
 
 class HTMLContent(CommonContent):
@@ -111,15 +123,21 @@ class MarkdownContent(CommonContent):
 
 class FileContent(CommonContent):
     contentType: Literal["file"] = Field("file")
-    fileName: str
+    name: str = Field(alias="fileName")
     """文件名"""
-    fileUrl: str
+    url: str = Field(alias="fileUrl")
     """文件地址"""
-    fileSize: int
+    size: int = Field(alias="fileSize")
     """文件大小 (字节)"""
+    fileKey: str
+    """文件key"""
 
-    def to_dict(self) -> dict:
-        return {"fileKey": self.fileName.split(".")[0]}
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_video_url(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["fileKey"] = values["fileUrl"]
+        values["fileUrl"] = f"https://chat-file.jwznb.com/{values['fileUrl']}"
+        return values
 
 
 class FormDetail(BaseModel):
@@ -151,10 +169,16 @@ class AudioContent(CommonContent):
     """音频数据，只收不发"""
 
     contentType: Literal["audio"] = Field("audio")
-    audioUrl: str
-    """音频endpoint, 自己拼base_url,(可能是https://chat-audio1.jwznb.com/)"""
-    audioDuration: int
+    url: str = Field(alias="audioUrl")
+    """音频地址(直接访问需要Refer:https://myapp.jwznb.com)"""
+    duration: int = Field(alias="audioDuration")
     """音频时长,单位秒"""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_video_url(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["audioUrl"] = f"https://chat-audio1.jwznb.com/{values['audioUrl']}"
+        return values
 
 
 Content = Union[
@@ -269,20 +293,20 @@ class BaseNotice(BaseModel):
     """触发事件对象类型"""
     userId: str
     """触发事件用户ID"""
-    
+
     if PYDANTIC_V2:
-        model_config = ConfigDict(populate_by_name =True) # type: ignore
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore
     else:
+
         class Config:
             allow_population_by_field_name = True
-        
 
-    @field_validator('chatType', mode='before')
+    @field_validator("chatType", mode="before")
     @classmethod
     def validate_chat_type(cls, value: str) -> str:
         """验证并转换chatType字段"""
         if value == "bot":
-            value= "user"
+            value = "user"
         return value
 
 

@@ -56,26 +56,35 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Text("text", {"text": text})
 
     @staticmethod
-    def at(user_id: str, name: Optional[str] = None) -> "At":
-        return At("at", {"user_id": user_id, "name": name})
+    def at(user_id: str, name: str = "") -> "At":
+        return At("at", {"user_id": user_id, "name": name or user_id})
 
     @staticmethod
     def image(
-        imageKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
+        url: Optional[str] = None,
+        raw: Optional[bytes] = None,
+        imageKey: Optional[str] = None,
+        **kwargs,
     ) -> "Image":
-        return Image("image", {"imageKey": imageKey, "_raw": raw})
+        return Image("image", {"url": url, "raw": raw, "imageKey": imageKey})
 
     @staticmethod
     def video(
-        videoKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
+        url: Optional[str] = None,
+        raw: Optional[bytes] = None,
+        videoKey: Optional[str] = None,
+        **kwargs,
     ) -> "Video":
-        return Video("video", {"videoKey": videoKey, "_raw": raw})
+        return Video("video", {"url": url, "raw": raw, "videoKey": videoKey})
 
     @staticmethod
     def file(
-        fileKey: Optional[str] = None, raw: Optional[bytes] = None, **kwargs
+        url: Optional[str] = None,
+        raw: Optional[bytes] = None,
+        fileKey: Optional[str] = None,
+        **kwargs,
     ) -> "File":
-        return File("file", {"fileKey": fileKey, "_raw": raw})
+        return File("file", {"url": url, "raw": raw, "fileKey": fileKey})
 
     @staticmethod
     def markdown(text: str) -> "MessageSegment":
@@ -93,9 +102,9 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return Buttons("buttons", {"buttons": buttons})
 
     @staticmethod
-    def audio(audioUrl: str, audioDuration: int, **kwargs):
+    def audio(url: str, duration: int, **kwargs):
         """语音消息，只收不发"""
-        return Audio("audio", {"audioUrl": audioUrl, "audioDuration": audioDuration})
+        return Audio("audio", {"url": url, "duration": duration})
 
     @staticmethod
     def face(code: str, emoji: str) -> "MessageSegment":
@@ -139,7 +148,7 @@ class Html(MessageSegment):
 
 class _AtData(TypedDict):
     user_id: str
-    name: Optional[str]
+    name: str
 
 
 @dataclass
@@ -153,8 +162,9 @@ class At(MessageSegment):
 
 
 class _ImageData(TypedDict):
+    url: Optional[str]
+    raw: Optional[bytes]
     imageKey: Optional[str]
-    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -168,8 +178,9 @@ class Image(MessageSegment):
 
 
 class _VideoData(TypedDict):
+    url: Optional[str]
+    raw: Optional[bytes]
     videoKey: Optional[str]
-    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -179,12 +190,13 @@ class Video(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[video:{self.data['videoKey']}]"
+        return f"[video:{self.data['url']}]"
 
 
 class _FileData(TypedDict):
+    url: Optional[str]
+    raw: NotRequired[Optional[bytes]]
     fileKey: Optional[str]
-    _raw: NotRequired[Optional[bytes]]
 
 
 @dataclass
@@ -194,7 +206,7 @@ class File(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[file:{self.data['fileKey']}]"
+        return f"[file:{self.data['url']}]"
 
 
 class _ButtonData(TypedDict):
@@ -212,8 +224,8 @@ class Buttons(MessageSegment):
 
 
 class _AudioData(TypedDict):
-    audioUrl: str
-    audioDuration: int
+    url: str
+    duration: int
 
 
 @dataclass
@@ -223,12 +235,14 @@ class Audio(MessageSegment):
 
     @override
     def __str__(self) -> str:
-        return f"[audio:{self.data['audioUrl']}]"
+        return f"[audio:{self.data['url']}]"
 
 
 class _FaceData(TypedDict):
     code: str
+    """表情码"""
     emoji: str
+    """字符emoji"""
 
 
 @dataclass
@@ -273,53 +287,100 @@ class Message(BaseMessage[MessageSegment]):
         yield Text("text", {"text": msg})
 
     def serialize(self) -> tuple[dict[str, Any], str]:
+        # sourcery skip: dict-assign-update-to-union
         """
         序列化消息为协议内容
         """
-        result: dict[str, Any] = {"at": []}
+        if not self:
+            raise ValueError("Empty message")
+
+        result: dict[str, Any] = {"at": [], "text": ""}
+
+        # 不支持语音发送
         if "audio" in self:
             logger.warning("Sending audio is not supported")
             self.exclude("audio")
+
+        # 按钮单独挂在 result 上
         if "buttons" in self:
             buttons = self["buttons"]
             assert isinstance(buttons, Buttons)
             result["buttons"] = buttons.data["buttons"]
 
-        if not self:
-            raise ValueError("Empty message")
-
-        # 只处理文本相关（text/markdown/html）和 Face 段
+        # 只包含 Text / At / Face 的消息，统一走纯文本通道
         if all(seg.is_text() or isinstance(seg, (At, Face)) for seg in self):
-            text_buffer = ""
-            lasttexttype: str | None = None
+            text_buffer: list[str] = []
+            last_text_type: str | None = None
+
             for seg in self:
                 if isinstance(seg, At):
                     result["at"].append(seg.data["user_id"])
+                    text_buffer.append(f"@{seg.data['name']}\u200b")
                 elif isinstance(seg, Face):
-                    text_buffer += f"[.{seg.data['code']}]\u200b"
+                    # 按协议要求转回 [.<code>]
+                    text_buffer.append(f"[.{seg.data['code']}]\u200b")
                 elif seg.is_text():
-                    text_buffer += seg.data["text"]
-                    lasttexttype = seg.type
+                    text_buffer.append(seg.data["text"])
+                    last_text_type = seg.type
 
-            if text_buffer:
-                result["text"] = text_buffer
-                # 如果没有任何文本段（只有 @），默认仍然用 text
-                return result, lasttexttype or "text"
-            # 只有 @，无文本
-            return result, "text"
+            result["text"] = "".join(text_buffer)
+            return result, last_text_type or "text"
 
-        # 处理混合类型（如图片、文件等）
-        _type = None
+        # 包含图片且消息段大于1，转为md发送
+        if len(self) > 1 and self.has("image"):
+            return self._build_markdown_message(result)
+        # 其它混合类型（只有单图/视频/文件）
+        text_parts: list[str] = []
+        message_type: Optional[str] = None
+
         for seg in self:
             if isinstance(seg, At):
                 result["at"].append(seg.data["user_id"])
+                text_parts.append(seg.data["name"] + "\u200b")
             elif seg.is_text():
-                result["text"] = seg.data["text"]
-                _type = seg.type
+                text_parts.append(seg.data["text"])
+                message_type = seg.type
             else:
-                result |= seg.data
-                _type = seg.type
-        return result, _type or "text"
+                # 非文本段的数据直接合并到 result
+                result.update(seg.data)
+                message_type = seg.type
+
+        result["text"] = "".join(text_parts)
+        return result, message_type or "text"
+
+    def _build_markdown_message(
+        self, result: dict[str, Any]
+    ) -> tuple[dict[str, Any], str]:
+        md_parts: list[str] = []
+
+        for seg in self:
+            if isinstance(seg, At):
+                # at 仍然单独放到 result["at"]，markdown 里按普通文本输出
+                result["at"].append(seg.data["user_id"])
+                name = seg.data["name"] or seg.data["user_id"]
+                md_parts.append(f"@{name}\u200b")
+            elif isinstance(seg, Face):
+                # 表情转成字符
+                md_parts.append(seg.data["emoji"])
+            elif seg.is_text():
+                md_parts.append(seg.data["text"])
+            elif isinstance(seg, Image):
+                if image_url := seg.data["url"]:
+                    # 普通 markdown 图片语法，src 由云湖解释
+                    md_parts.append(f"![image]({image_url})")
+            else:
+                # 文件、视频等不进 markdown 混排，忽略或以后按需扩展
+                logger.debug(
+                    "Ignore non-image segment in markdown mixed message: %r", seg
+                )
+
+        md_text = "".join(md_parts).strip()
+        if not md_text:
+            # 与其构造空 markdown，不如显式抛错提示调用方
+            raise ValueError("Cannot serialize image message: no renderable content")
+
+        result["text"] = md_text
+        return result, "markdown"
 
     @staticmethod
     def deserialize(
