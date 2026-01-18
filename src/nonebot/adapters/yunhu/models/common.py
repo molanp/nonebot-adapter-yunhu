@@ -141,6 +141,13 @@ class MarkdownContent(CommonContent):
 class PostContent(CommonContent):
     contentType: Literal["post"] = Field("post")
     text: str
+    """文章预览文本"""
+    postId: int
+    """文章ID"""
+    postTitle: str
+    """文章标题"""
+    postContent: str
+    """文章内容"""
     postContentType: PostContentTypeEnum
     """文章的文本类别"""
 

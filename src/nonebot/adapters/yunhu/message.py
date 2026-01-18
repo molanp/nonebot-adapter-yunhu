@@ -195,7 +195,7 @@ class Video(MessageSegment):
 
 class _FileData(TypedDict):
     url: Optional[str]
-    raw: NotRequired[Optional[bytes]]
+    raw: Optional[bytes]
     fileKey: Optional[str]
 
 
