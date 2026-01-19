@@ -7,7 +7,7 @@ from typing_extensions import override
 from nonebot.adapters import Message as BaseMessage
 from nonebot.adapters import MessageSegment as BaseMessageSegment
 from nonebot.log import logger
-
+from .tool import YUNHU_EMOJI_MAP, _EMOJI_PATTERN
 from .models.common import (
     ButtonBody,
     Content,
@@ -406,7 +406,6 @@ class Message(BaseMessage[MessageSegment]):
 
         msg = Message(f"{command_name} ") if command_name else Message()
         parsed_content = content.to_dict()
-        from .tool import YUNHU_EMOJI_MAP, _EMOJI_PATTERN
 
         def _split_face_segments(segment: str) -> list[MessageSegment]:
             """将文本分割为 Text/Face 段列表"""

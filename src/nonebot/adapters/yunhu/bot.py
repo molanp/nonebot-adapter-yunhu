@@ -143,7 +143,7 @@ async def send(
     event: Event,
     message: Union[str, Message, MessageSegment],
     at_sender: bool = False,
-    reply_to: bool = False,
+    reply_to: bool | None | str | int = False,
 ) -> SendMsgResponse:  # sourcery skip: use-fstring-for-concatenation
     """默认回复消息处理函数。"""
 
@@ -183,12 +183,14 @@ async def send(
     # 在序列化消息前完成资源上传
     full_message = await upload_resource_data(bot, full_message)
     content, msg_type = full_message.serialize()
-    if reply_to and isinstance(event, MessageEvent):
-        parentId = event.event.message.msgId
+    if isinstance(reply_to, (str, int)):
+        parent_id = str(reply_to)
+    elif reply_to is True and isinstance(event, MessageEvent):
+        parent_id = event.event.message.msgId
     else:
-        parentId = None
+        parent_id = None
 
-    return await bot.send_msg(receive_type, receive_id, content, msg_type, parentId)
+    return await bot.send_msg(receive_type, receive_id, content, msg_type, parent_id)
 
 
 async def upload_resource_data(
@@ -719,11 +721,11 @@ class Bot(BaseBot):
     ) -> SendMsgResponse:
         """
         根据 `event` 向触发事件的主体回复消息。
-        
+
         :params event: Event 对象
         :params message: 要发送的消息
         :params at_sender: 是否 @ 事件主体, 默认为 False
-        :params reply_to: 是否回复事件主体, 默认为 False
+        :params reply_to: 是否回复事件主体, 默认为 False,若传入message_id, 则回复message_id指向的消息
         返回:
             API 调用返回数据
         异常:
