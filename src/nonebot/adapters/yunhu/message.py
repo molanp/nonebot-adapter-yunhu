@@ -308,7 +308,7 @@ class Message(BaseMessage[MessageSegment]):
                 result["buttons"].extend(seg.data["buttons"])
 
         # 只包含 Text / At / Face 的消息，统一走纯文本通道
-        if all(seg.is_text() or isinstance(seg, (At, Face)) for seg in self):
+        if all(isinstance(seg, (Text, At, Face)) for seg in self):
             text_buffer: list[str] = []
             last_text_type: str | None = None
 
@@ -319,7 +319,7 @@ class Message(BaseMessage[MessageSegment]):
                 elif isinstance(seg, Face):
                     # 按协议要求转回 [.<code>]
                     text_buffer.append(f"[.{seg.data['code']}]\u200b")
-                elif seg.is_text():
+                elif isinstance(seg, Text):
                     text_buffer.append(seg.data["text"])
                     last_text_type = seg.type
 
@@ -337,7 +337,7 @@ class Message(BaseMessage[MessageSegment]):
             if isinstance(seg, At):
                 result["at"].append(seg.data["user_id"])
                 text_parts.append(seg.data["name"] + "\u200b")
-            elif seg.is_text():
+            elif isinstance(seg, (Markdown, Html)):
                 text_parts.append(seg.data["text"])
                 message_type = seg.type
             else:
