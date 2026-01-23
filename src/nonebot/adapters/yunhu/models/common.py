@@ -9,6 +9,7 @@ from nonebot.compat import (
     ConfigDict,
 )
 
+
 class PostContentTypeEnum(IntEnum):
     TEXT = 1
     """普通文章"""
@@ -138,6 +139,7 @@ class MarkdownContent(CommonContent):
     contentType: Literal["markdown"] = Field("markdown")
     text: str
 
+
 class PostContent(CommonContent):
     contentType: Literal["post"] = Field("post")
     text: str
@@ -150,6 +152,7 @@ class PostContent(CommonContent):
     """文章内容"""
     postContentType: PostContentTypeEnum
     """文章的文本类别"""
+
 
 class FileContent(CommonContent):
     contentType: Literal["file"] = Field("file")
@@ -234,7 +237,7 @@ Content = Union[
     VideoContent,
     FormContent,
     AudioContent,
-    PostContent
+    PostContent,
 ]
 
 
@@ -275,7 +278,7 @@ class EventMessage(BaseModel):
         """
         content = values.get("content")
         if not content:
-            return values        # 如果已经有内层 contentType，保证外层一致或回填外层
+            return values  # 如果已经有内层 contentType，保证外层一致或回填外层
         if "contentType" in content:
             values.setdefault("contentType", content["contentType"])
             return values
@@ -351,7 +354,7 @@ class BaseNotice(BaseModel):
     time: int
     """触发事件时间戳,毫秒13位时间戳"""
     chatId: str = Field(alias="recvId")
-    """触发事件的对象ID(群环境为群号，单聊环境为用户ID)"""
+    """触发事件的对象ID(群环境为群号，单聊环境为机器人ID或用户ID,建议使用 `userId` 来获取用户id)"""
     chatType: Literal["group", "user"] = Field(alias="recvType")
     """触发事件对象类型"""
     userId: str
