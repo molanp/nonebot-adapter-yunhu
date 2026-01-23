@@ -367,7 +367,7 @@ class Message(BaseMessage[MessageSegment]):
             elif isinstance(seg, Image):
                 if image_url := seg.data["url"]:
                     # 普通 markdown 图片语法，src 由云湖解释
-                    md_parts.append(f"![image]({image_url})")
+                    md_parts.append(f"![image]({image_url})\n")
             else:
                 # 文件、视频等不进 markdown 混排，忽略或以后按需扩展
                 logger.debug(

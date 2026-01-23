@@ -20,7 +20,7 @@ _✨ YunHu adapter for NoneBot2 ✨_
 - [x] 按钮事件上报接收
 - [ ] 机器人设置事件
 - [x] 按钮发送
-- [ ] 表单发送
+- [x] 表单接收
 
 ### 支持的消息元素
 
@@ -30,13 +30,13 @@ _✨ YunHu adapter for NoneBot2 ✨_
 | 图片 Image        | ✅       |
 | 提及用户 At(user) | ✅       |
 | 按钮 Buttons      | ✅       |
-| 表单 Form         | ❌       |
+| 表单 Form         | ⬇️       |
 | 表情包 expression | ⬇️       |
 | 语音 Audio        | ⬇️       |
 | 视频 Video        | ✅       |
 | 文件 File         | ✅       |
 | HTML HTML         | ✅       |
-| 文章 Post         | ❌       |
+| 文章 Post         | ⬇️       |
 | Markdown          | ✅       |
 | 提示信息 Tip      | ⬇️       |
 | 回复 Reply        | ✅       |
@@ -131,25 +131,21 @@ async def handle_echo(bot: Bot, event: Event):
 from nonebot import on_command
 from nonebot.adapters.yunhu import Bot, Event, MessageSegment
 
-send_image = on_command("image")
+test = on_command("test")
 
-@send_image.handle()
+@test.handle()
 async def handle_send_image(bot: Bot, event: Event):
     # 发送文本
-    await bot.send(event, MessageSegment.text("Hello World"))
-    # 有一种更简单的写法可以不用在上方写bot传参
-    # await send_image.send(MessageSegment.text("test"))
-
-    # 发送图片（需要先上传图片获取 image_key）/ 也可以直接传参raw=bytes,适配器会自动上传
-    await bot.send(event, MessageSegment.image("image_key"))
-
+    await test.send(MessageSegment.text("Hello World"))
+    # 发送图片, 也可以直接传参 raw=bytes 或 raw="imageKey"
+    await test.send(MessageSegment.image(url="xxxxx"))
     # @某人
-    await bot.send(event, MessageSegment.at("user_id"))
+    await test.send(MessageSegment.at("user_id"))
 ```
 
 ## 获取帮助
 
-<img alt="image" src="https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f" />
+![image](https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f)
 
 - 加入云湖群聊【NoneBot 云湖适配器交流群】: [链接](https://yhfx.jwznb.com/share?key=85HNqkjNINWc&ts=1762393601)
 - 群 ID: 519215204
