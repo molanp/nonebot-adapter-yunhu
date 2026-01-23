@@ -415,19 +415,17 @@ class Message(BaseMessage[MessageSegment]):
                 if match.start() > last_end:
                     normal_text = segment[last_end : match.start()]
                     if normal_text:
-                        segments.append(Text("text", {"text": normal_text}))
+                        segments.append(MessageSegment.text(normal_text))
                 emoji_code = match.group(0)
                 clean_code = emoji_code.lstrip("[").rstrip("]").lstrip(".")
                 emoji_value = YUNHU_EMOJI_MAP.get(emoji_code)
                 if emoji_value:
-                    segments.append(
-                        Face("face", {"code": clean_code, "emoji": emoji_value})
-                    )
+                    segments.append(MessageSegment.face(clean_code, emoji_value))
                 last_end = match.end()
             if last_end < len(segment):
                 normal_text = segment[last_end:]
                 if normal_text:
-                    segments.append(Text("text", {"text": normal_text}))
+                    segments.append(MessageSegment.text(normal_text))
             return segments
 
         def parse_text(text: str, with_face: bool = False):
@@ -443,7 +441,7 @@ class Message(BaseMessage[MessageSegment]):
                     if with_face:
                         msg.extend(Message(_split_face_segments(segment)))
                     else:
-                        msg.append(Text("text", {"text": segment}))
+                        msg.append(MessageSegment.text(segment))
                 # 处理@本身
                 user_name = embed.group("name")
                 if user_name in at_name_mapping:
@@ -455,7 +453,7 @@ class Message(BaseMessage[MessageSegment]):
                         at_name_mapping[user_name] = actual_user_id
                         at_index += 1
                 if actual_user_id:
-                    msg.append(At("at", {"user_id": actual_user_id, "name": user_name}))
+                    msg.append(MessageSegment.at(actual_user_id, user_name))
                 pos = embed.end()
             # 处理最后一段文本
             segment = text[pos:]
@@ -463,7 +461,7 @@ class Message(BaseMessage[MessageSegment]):
                 if with_face:
                     msg.extend(Message(_split_face_segments(segment)))
                 else:
-                    msg.append(Text("text", {"text": segment}))
+                    msg.append(MessageSegment.text(segment))
 
         match message_type:
             case "text":
@@ -486,5 +484,5 @@ class Message(BaseMessage[MessageSegment]):
     @override
     def extract_plain_text(self) -> str:
         text_list: list[str] = []
-        text_list.extend(str(seg) for seg in self if seg.is_text())
+        text_list.extend(str(seg) for seg in self if seg.type == "text")
         return "".join(text_list)
