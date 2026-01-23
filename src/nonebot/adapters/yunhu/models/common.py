@@ -429,6 +429,8 @@ class TipNoticeDetail(BaseNotice):
 
     content: str
     """群提示消息内容"""
+    sender: Sender
+    """发送者信息(一般为操作者信息)"""
 
     @model_validator(mode="before")
     @classmethod
@@ -440,6 +442,7 @@ class TipNoticeDetail(BaseNotice):
             "chatType": values["chat"]["chatType"],
             "content": values["message"]["content"]["text"],
             "userId": values["sender"]["senderId"],
+            "sender": values["sender"],
         }
 
 
