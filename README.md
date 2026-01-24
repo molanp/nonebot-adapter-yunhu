@@ -110,6 +110,8 @@ driver.register_adapter(YunhuAdapter)
 
 ## 使用方法
 
+> [!tip]
+> 
 > 建议使用 `nonebot-plugin-alconna` 和 `nonebot-plugin-uninfo` 等插件，来提高插件可移植性，避免直接与适配器底层交互
 
 ### 基本用法
