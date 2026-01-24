@@ -28,8 +28,6 @@ async def _(event: GroupLeaveNoticeEvent):
 import random
 import os
 import json
-from pathlib import Path
-from typing import Any
 from nonebot import on_command
 from nonebot.adapters.yunhu import Message
 from nonebot.plugin import PluginMetadata
@@ -52,7 +50,7 @@ aya = on_command("每日发癫", priority=5, block=True)
 
 DATA = None
 
-async def readInfo(file):
+def readInfo(file):
     global DATA
     if DATA:
       return DATA
@@ -67,7 +65,7 @@ async def _(args: Message = CommandArg()):
     if cost == "":
         await aya.finish("至少需要一个参数!", at_sender=True)
     # json数据存放路径
-    ayanami = (await readInfo("post.json"))["post"]
+    ayanami = readInfo("post.json")["post"]
     # 随机选取数组中的一个对象
     randomPost = random.choice(ayanami).replace("阿咪", cost)
     await aya.send(randomPost, at_sender=True)
@@ -81,4 +79,48 @@ async def _(args: Message = CommandArg()):
         ...
     ]
 }
+```
+
+## 每日发癫(使用`Alconna`的高级写法)
+
+```python
+import random
+import os
+import json
+from nonebot import require
+from nonebot.plugin import PluginMetadata
+require("nonebot_plugin_alconna")
+from nonebot_plugin_alconna import on_alconna , Alconna, Args, Match, CommandMeta, UniMessage
+
+__plugin_meta__ = PluginMetadata(
+    name="每日发癫",
+    description="每日发癫魔楞语句",
+    usage="""
+usage：
+    每日发癫魔楞语句
+    指令：
+        每日发癫（参数）
+    """.strip()
+)
+
+
+aya = on_alconna(Alconna("每日发癫", Args["name", str], meta=CommandMeta(compact=True)), priority=5, block=True)
+
+DATA = None
+
+def readInfo(file):
+    global DATA
+    if DATA:
+      return DATA
+    path = os.path.dirname(__file__)
+    with open(os.path.join(path, file), "r", encoding="utf-8") as f:
+        DATA = json.loads((f.read()).strip())
+    return DATA
+
+@aya.handle()
+async def _(name: Match[str]):
+    ayanami = readInfo("post.json")["post"]
+    # 随机选取数组中的一个对象
+    randomPost = random.choice(ayanami).replace("阿咪", name.result)
+    await aya.send(UniMessage(randomPost), reply_to=True)
 ```
