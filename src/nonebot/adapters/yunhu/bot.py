@@ -220,19 +220,18 @@ async def upload_resource_data(
         key_field, upload_method, segment_builder = resource_config[segment.type]
 
         # 已有key，直接添加
-        if key_field in segment.data:
+        if segment.data[key_field]:
             processed_message += segment
             continue
 
-        raw = segment.data.get("raw")
-        url = segment.data.get("url")
+        raw = segment.data["raw"]
+        url = segment.data["url"]
 
         # 上传资源
         if raw or url:
             resource_url, key = await upload_method(raw or url)
             processed_message += segment_builder(
                 url=resource_url,
-                raw=raw,
                 **{key_field: key},
             )
         else:
@@ -623,7 +622,7 @@ class Bot(BaseBot):
 
         extension = filetype.guess_extension(src) or "dat"
 
-        files = [("file", src, f"file.{extension}")]
+        files = [("file", (f"file.{extension}", src))]
 
         response = await self.call_api("file/upload", method="POST", files=files)
         if "data" not in response:
@@ -653,7 +652,7 @@ class Bot(BaseBot):
 
         extension = filetype.guess_extension(src) or "mp4"
 
-        videos = [("video", src, f"video.{extension}")]
+        videos = [("video", (f"video.{extension}", src))]
 
         response = await self.call_api("video/upload", method="POST", files=videos)
         if "data" not in response:
@@ -699,7 +698,7 @@ class Bot(BaseBot):
         if extension == "jpeg":
             extension = "jpg"
 
-        images = [("image", src)]
+        images = [("image", (f"image.{extension}", src))]
 
         response = await self.call_api("image/upload", method="POST", files=images)
         if "data" not in response:

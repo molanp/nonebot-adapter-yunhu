@@ -18,7 +18,6 @@ from nonebot.drivers import (
     Request,
     Response,
 )
-from nonebot.utils import escape_tag
 
 from . import event
 from .bot import Bot
@@ -181,7 +180,7 @@ class Adapter(BaseAdapter):
     async def _call_api(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, bot: Bot, api: str, **data: Any
     ) -> Any:
-        logger.debug(f"Calling API: {api}, data: {data}")
+        logger.debug(f"Calling API: {api}")
         params = data.get("params", {})
         if api.startswith("https://"):
             url = api
