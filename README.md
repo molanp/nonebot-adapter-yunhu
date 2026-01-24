@@ -156,6 +156,7 @@ async def handle_send_image(bot: Bot, event: Event):
 
 ## 相关链接
 
+- [适配器帮助文档](https://yunhu.awkchan.top/)
 - [云湖第三方文档 1](https://yh-api.yyyyt.top/api/v1/msg.html#%E6%89%B9%E9%87%8F%E6%92%A4%E5%9B%9E%E6%B6%88%E6%81%AF)
 - [云湖第三方文档 2](https://fly1919.github.io/adapter-yunhupro/markdown/dev/yunhu-official/400/7.html)
 - [云湖第三方文档 3](https://www.yhchat.top/#/yunhu-bot-dev/msg-type-examples)
