@@ -149,7 +149,7 @@ async def handle_send_image(bot: Bot, event: Event):
 
 ## 获取帮助
 
-![image](https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f)
+<img alt="image" width="300" src="https://github.com/user-attachments/assets/b133281f-58d2-4974-bee3-77b520b0864f" />
 
 - 加入云湖群聊【NoneBot 云湖适配器交流群】: [链接](https://yhfx.jwznb.com/share?key=85HNqkjNINWc&ts=1762393601)
 - 群 ID: 519215204
