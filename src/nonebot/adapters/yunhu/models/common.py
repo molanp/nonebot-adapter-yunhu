@@ -187,15 +187,15 @@ class FormDetail(BaseModel):
     """表单类型"""
     label: str
     """表单标签"""
-    value: Optional[str]
+    value: Optional[str] = None
     """输入框/开关值"""
-    selectIndex: Optional[int]
+    selectIndex: Optional[int] = None
     """单选框/选择框选中索引"""
-    selectValue: Optional[str]
+    selectValue: Optional[str] = None
     """单选框选中选项"""
-    selectStatus: Optional[list[bool]]
+    selectStatus: Optional[list[bool]] = None
     """多选框选中状态"""
-    selectValues: Optional[list[str]]
+    selectValues: Optional[list[str]] = None
     """多选框选中选项"""
 
 
