@@ -183,10 +183,10 @@ async def send(
     # 在序列化消息前完成资源上传
     full_message = await upload_resource_data(bot, full_message)
     content, msg_type = full_message.serialize()
-    if isinstance(reply_to, (str, int)):
-        parent_id = str(reply_to)
-    elif reply_to is True and isinstance(event, MessageEvent):
+    if reply_to is True and isinstance(event, MessageEvent):
         parent_id = event.event.message.msgId
+    elif isinstance(reply_to, (str, int)):
+        parent_id = str(reply_to)
     else:
         parent_id = None
 
