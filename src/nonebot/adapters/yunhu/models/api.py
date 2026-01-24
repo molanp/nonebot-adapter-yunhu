@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Literal, Optional
 from pydantic import BaseModel
 
@@ -23,42 +22,6 @@ class SendMsgResponse(BaseModel):
     """响应数据"""
     msg: str
     """返回信息"""
-
-
-class CheckChatType(Enum):
-    USER = 1
-    """用户"""
-    GROUP = 2
-    """群组"""
-    BOT = 3
-    """机器人"""
-
-
-class CheckChatInfoRecord(BaseModel):
-    """
-    聊天信息审核记录
-
-    用于表示聊天信息的审核记录信息
-    """
-
-    id: int
-    """记录ID"""
-    chatId: str
-    """对象ID"""
-    chatType: CheckChatType
-    """对象类型"""
-    checkWay: str
-    """审核方式"""
-    reason: str
-    """审核原因"""
-    status: int
-    """审核状态"""
-    createTime: int
-    """创建时间戳"""
-    updateTime: int
-    """更新时间戳"""
-    delFlag: int
-    """删除标记, 0表示未删除"""
 
 
 class Bot(BaseModel):
@@ -96,27 +59,6 @@ class Bot(BaseModel):
     """是否私有 (0:公开, 1:私有)"""
     uri: str
     """机器人URI"""
-    checkChatInfoRecord: CheckChatInfoRecord
-    """聊天审核记录"""
-
-
-class GroupBotRel(BaseModel):
-    """群组与机器人关系"""
-
-    id: int
-    """关系ID"""
-    groupId: str
-    """群组ID"""
-    botId: str
-    """机器人ID"""
-    delFlag: int
-    """删除标记, 0表示未删除 """
-    createTime: int
-    """创建时间戳"""
-    updateTime: int
-    """更新时间戳"""
-    bot: Bot
-    """机器人信息"""
 
 
 class BotInfoData(BaseModel):
@@ -171,10 +113,6 @@ class Group(BaseModel):
     """群聊分类"""
     uri: str
     """机器人URI"""
-    groupBotRel: GroupBotRel
-    """群组与机器人关系"""
-    checkChatInfoRecord: CheckChatInfoRecord
-    """聊天信息审核记录"""
 
 
 class GroupInfoData(BaseModel):
